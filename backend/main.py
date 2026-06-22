@@ -10,7 +10,8 @@ from backend.routes import (
     alerts,
     analytics,
     search,
-    work_orders
+    work_orders,
+    dashboard
 )
 
 app = FastAPI(title="FixForesight Predictive + Prescriptive Backend (Modular)")
@@ -55,3 +56,5 @@ app.include_router(alerts.router)
 app.include_router(analytics.router)
 app.include_router(search.router)
 app.include_router(work_orders.router)
+app.include_router(dashboard.router)
+

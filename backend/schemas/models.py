@@ -51,10 +51,18 @@ class AnalyticsResponse(BaseModel):
     warning: int
     critical: int
 
+class DashboardResponse(BaseModel):
+    total_machines: int
+    healthy_machines: int
+    warning_machines: int
+    critical_machines: int
+    critical_alerts_count: int
+
 class WorkOrderRequest(BaseModel):
     machine_id: str
     priority: str
     action_required: str
+
 
 class AlertWebhookRequest(BaseModel):
     Type: Optional[str] = None

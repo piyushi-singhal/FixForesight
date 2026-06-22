@@ -1,6 +1,56 @@
 from datetime import datetime, timedelta
 import random
+import os
+try:
+    from sqlalchemy.exc import SQLAlchemyError
+except ImportError:
+    class SQLAlchemyError(Exception):
+        pass
 
+class DummySession:
+    def close(self):
+        pass
+    def commit(self):
+        pass
+    def rollback(self):
+        pass
+    def __getattr__(self, name):
+        raise SQLAlchemyError("SQLAlchemy is not installed")
+
+SQLALCHEMY_AVAILABLE = False
+try:
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import declarative_base, sessionmaker
+    SQLALCHEMY_AVAILABLE = True
+except ImportError:
+    class DummyBase:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+    Base = DummyBase
+    engine = None
+    class SessionLocalClass:
+        def __call__(self, *args, **kwargs):
+            return DummySession()
+    SessionLocal = SessionLocalClass()
+
+if SQLALCHEMY_AVAILABLE:
+    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/pdm_db")
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base = declarative_base()
+
+def get_db():
+    if not SQLALCHEMY_AVAILABLE or SessionLocal is None:
+        yield None
+        return
+    db_session = SessionLocal()
+    try:
+        yield db_session
+    finally:
+        db_session.close()
+
+# 2. Mock Database Fallback (used when Postgres is offline)
 class MockDB:
     def __init__(self):
         # 1. Machines Directory (Internal representation, status/name will be mapped dynamically on frontend)
