@@ -849,7 +849,7 @@
             if (val) {
                 clearSearchBtn.style.display = 'block';
                 try {
-                    const r = await fetch(`${API_BASE}/incidents/search?q=${encodeURIComponent(val)}`);
+                    const r = await fetch(`${API_BASE}/search?q=${encodeURIComponent(val)}`);
                     if (r.ok) {
                         const data = await r.json();
                         renderSearchOverlay(data);

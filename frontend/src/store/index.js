@@ -1,18 +1,15 @@
 import { configureStore, createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-
-// Resolve backend API URL dynamically based on current page origin/port
-const API_URL = window.location.port === '3000'
-  ? `${window.location.protocol}//${window.location.hostname}:8000`
-  : window.location.origin;
+import * as machineService from '../services/machineService';
+import * as recommendationService from '../services/recommendationService';
+import * as alertService from '../services/alertService';
+import * as searchService from '../services/searchService';
 
 // Async Thunks
 export const fetchMachines = createAsyncThunk(
   'machines/fetchMachines',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_URL}/machines`);
-      if (!response.ok) throw new Error('Failed to load machine overview');
-      return await response.json();
+      return await machineService.getMachines();
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -23,9 +20,7 @@ export const fetchMachineRisk = createAsyncThunk(
   'detail/fetchMachineRisk',
   async (machineId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_URL}/machines/${machineId}/risk`);
-      if (!response.ok) throw new Error(`Failed to load telemetry for Machine-${machineId}`);
-      return await response.json();
+      return await machineService.getMachineRisk(machineId);
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -36,9 +31,7 @@ export const fetchMachineRecommendations = createAsyncThunk(
   'recommendation/fetchMachineRecommendations',
   async (machineId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_URL}/machines/${machineId}/recommendations`);
-      if (!response.ok) throw new Error(`Failed to load recommendations for Machine-${machineId}`);
-      return await response.json();
+      return await recommendationService.getMachineRecommendations(machineId);
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -49,17 +42,7 @@ export const createWorkOrder = createAsyncThunk(
   'recommendation/createWorkOrder',
   async ({ machineId, priority, actionRequired }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_URL}/work-orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          machine_id: machineId,
-          priority: priority,
-          action_required: actionRequired
-        })
-      });
-      if (!response.ok) throw new Error('Failed to generate work order');
-      return await response.json();
+      return await recommendationService.createWorkOrder(machineId, priority, actionRequired);
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -70,9 +53,7 @@ export const fetchAlerts = createAsyncThunk(
   'alerts/fetchAlerts',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_URL}/alerts`);
-      if (!response.ok) throw new Error('Failed to retrieve alerts');
-      return await response.json();
+      return await alertService.getAlerts();
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -83,9 +64,7 @@ export const searchIncidents = createAsyncThunk(
   'search/searchIncidents',
   async (query, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_URL}/incidents/search?q=${encodeURIComponent(query)}`);
-      if (!response.ok) throw new Error('Search request failed');
-      return await response.json();
+      return await searchService.searchIncidents(query);
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -97,7 +76,7 @@ const machinesSlice = createSlice({
   name: 'machines',
   initialState: {
     list: [],
-    activeMachineId: 'M101', // Conforming to contract's string format (e.g. M101)
+    activeMachineId: 'M101',
     loading: false,
     error: null
   },
