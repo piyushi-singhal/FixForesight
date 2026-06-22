@@ -338,98 +338,133 @@ export default function App() {
           </div>
         </div>
 
-        {/* Dashboard Grid layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: '5fr 4fr', gap: '28px' }}>
-          
-          {/* Services & Health */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-            <div className="glass-card">
-              <h3 className="card-title">Infrastructure Dependencies</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-glass)', padding: '12px', borderRadius: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Wifi size={16} style={{ color: sysHealth.status !== 'offline' ? 'var(--success)' : 'var(--danger)' }} />
-                    <span style={{ fontSize: '13px', fontWeight: 600 }}>FastAPI Router Server</span>
-                  </div>
-                  <span className={`machine-prob-badge ${sysHealth.status !== 'offline' ? 'healthy' : 'danger'}`}>
-                    {sysHealth.status !== 'offline' ? 'ONLINE' : 'OFFLINE'}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-glass)', padding: '12px', borderRadius: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Database size={16} style={{ color: sysHealth.postgres.includes('healthy') ? 'var(--success)' : 'var(--danger)' }} />
-                    <span style={{ fontSize: '13px', fontWeight: 600 }}>PostgreSQL Database</span>
-                  </div>
-                  <span className={`machine-prob-badge ${sysHealth.postgres.includes('healthy') ? 'healthy' : 'danger'}`}>
-                    CONNECTED
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-glass)', padding: '12px', borderRadius: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Search size={16} style={{ color: sysHealth.solr.includes('healthy') ? 'var(--success)' : 'var(--danger)' }} />
-                    <span style={{ fontSize: '13px', fontWeight: 600 }}>Apache Solr Incident Logs</span>
-                  </div>
-                  <span className={`machine-prob-badge ${sysHealth.solr.includes('healthy') ? 'healthy' : 'danger'}`}>
-                    INDEXED
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="glass-card">
-              <h3 className="card-title">Plant Health Index</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                  <span>Healthy Index</span>
-                  <strong>{analytics.healthy}%</strong>
-                </div>
-                <div className="prediction-val-bar">
-                  <div className="prediction-val-fill healthy" style={{ width: `${analytics.healthy}%` }}></div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '6px' }}>
-                  <span>Warning / Critical</span>
-                  <strong>{analytics.warning + analytics.critical}%</strong>
-                </div>
-                <div className="prediction-val-bar">
-                  <div className="prediction-val-fill warning" style={{ width: `${analytics.warning + analytics.critical}%` }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Warnings Feed */}
-          <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '380px' }}>
-            <div style={{ borderBottom: '1px solid var(--border-glass)', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 className="card-title" style={{ margin: 0 }}>System Event Feed</h3>
-              <span className="part-status-badge instock">SNS Topic</span>
-            </div>
-            
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '14px', maxHeight: '350px' }}>
-              {alerts.length === 0 ? (
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '40px' }}>
-                  All nodes operating normally. No alerts triggered.
-                </p>
+        {/* Second Row: Risk and Failure Charts */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '28px' }}>
+          <div className="glass-card">
+            <h3 className="card-title">Risk Distribution Chart</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
+              Breakdown of machines by active operational risk category.
+            </p>
+            <div style={{ display: 'flex', height: '18px', borderRadius: '9px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', marginTop: '24px' }}>
+              {totalCount > 0 ? (
+                <>
+                  {healthyCount > 0 && <div style={{ width: `${(healthyCount / totalCount) * 100}%`, background: 'var(--success)', transition: 'width 0.3s' }}></div>}
+                  {warningCount > 0 && <div style={{ width: `${(warningCount / totalCount) * 100}%`, background: 'var(--warning)', transition: 'width 0.3s' }}></div>}
+                  {criticalCount > 0 && <div style={{ width: `${(criticalCount / totalCount) * 100}%`, background: 'var(--danger)', transition: 'width 0.3s' }}></div>}
+                </>
               ) : (
-                alerts.map((a) => {
-                  const isCritical = a.severity && a.severity.toLowerCase() === 'critical';
-                  const isHigh = a.severity && a.severity.toLowerCase() === 'high';
-                  const cardClass = isCritical ? 'critical' : isHigh ? 'warning' : 'info';
-                  return (
-                    <div key={a.alert_id} className={`alert-card ${cardClass}`}>
-                      <div className="alert-content">
-                        <span className="alert-subject" style={{ fontWeight: 700 }}>
-                          {a.severity} Severity Alert (Machine {a.machine_id})
-                        </span>
-                        <p className="alert-message">{a.message}</p>
-                        <span className="alert-time">{new Date(a.created_at).toLocaleTimeString()}</span>
-                      </div>
-                    </div>
-                  );
-                })
+                <div style={{ width: '100%', background: 'rgba(255,255,255,0.05)' }}></div>
               )}
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: '20px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--success)' }}></span>
+                <span>Healthy: <strong>{healthyCount}</strong> ({totalCount ? Math.round((healthyCount/totalCount)*100) : 0}%)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--warning)' }}></span>
+                <span>Warning: <strong>{warningCount}</strong> ({totalCount ? Math.round((warningCount/totalCount)*100) : 0}%)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--danger)' }}></span>
+                <span>Critical: <strong>{criticalCount}</strong> ({totalCount ? Math.round((criticalCount/totalCount)*100) : 0}%)</span>
+              </div>
+            </div>
           </div>
 
+          <div className="glass-card">
+            <h3 className="card-title">Failure Distribution Chart</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
+              Distribution of active failure modes predicted by ML models.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+              {(() => {
+                const failureCounts = {};
+                machines.forEach(m => {
+                  const mode = m.predicted_failure || 'Normal Operation';
+                  failureCounts[mode] = (failureCounts[mode] || 0) + 1;
+                });
+                const failureData = Object.entries(failureCounts).map(([mode, count]) => ({
+                  mode,
+                  count,
+                  pct: totalCount ? Math.round((count / totalCount) * 100) : 0
+                })).sort((a, b) => b.count - a.count);
+
+                if (failureData.length === 0) {
+                  return <p style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center' }}>No predictions available</p>;
+                }
+
+                return failureData.map(f => (
+                  <div key={f.mode} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>{f.mode}</span>
+                      <strong>{f.count} unit(s) ({f.pct}%)</strong>
+                    </div>
+                    <div className="prediction-val-bar" style={{ height: '6px' }}>
+                      <div 
+                        className="prediction-val-fill" 
+                        style={{ 
+                          width: `${f.pct}%`, 
+                          background: f.mode === 'Normal Operation' ? 'var(--success)' : 'var(--primary)',
+                          height: '100%',
+                          borderRadius: '3px'
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        </div>
+
+        {/* Third Row: Critical Machines Table */}
+        <div className="glass-card">
+          <h3 className="card-title">Critical Machines Table</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px', marginBottom: '14px' }}>
+            List of machines currently flagged as Critical based on predictive failure risk.
+          </p>
+          <div className="table-responsive" style={{ overflowX: 'auto' }}>
+            <table className="parts-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr>
+                  <th>Machine ID</th>
+                  <th>Failure Probability</th>
+                  <th>Risk Level</th>
+                  <th>Recommendation</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const criticalMachines = machines.filter(m => getMachineStatus(m.failure_probability) === 'Critical');
+                  if (criticalMachines.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '28px' }}>
+                          <CheckCircle2 size={24} className="text-success" style={{ margin: '0 auto 8px', display: 'block' }} />
+                          All units operating within safe parameters. No critical machines detected.
+                        </td>
+                      </tr>
+                    );
+                  }
+                  return criticalMachines.map(m => (
+                    <tr key={m.machine_id}>
+                      <td><strong>{m.machine_id}</strong></td>
+                      <td style={{ color: 'var(--danger)', fontWeight: 700 }}>
+                        {Math.round(m.failure_probability * 100)}%
+                      </td>
+                      <td>
+                        <span className="machine-prob-badge danger">
+                          Critical
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '12px' }}>{m.recommendation}</td>
+                    </tr>
+                  ));
+                })()}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );

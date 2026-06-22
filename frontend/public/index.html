@@ -873,57 +873,40 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 5fr 4fr; gap: 28px;">
-                        <div class="flex-col-gap">
-                            <!-- Dependencies -->
-                            <div class="glass-card">
-                                <h3 class="card-title">Infrastructure Dependencies</h3>
-                                <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-glass); padding: 12px; border-radius: 10px; background:rgba(255,255,255,0.01)">
-                                        <span style="font-size: 13px; font-weight:600">FastAPI Router Server</span>
-                                        <span class="machine-prob-badge healthy" id="status-fastapi-badge">ONLINE</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-glass); padding: 12px; border-radius: 10px; background:rgba(255,255,255,0.01)">
-                                        <span style="font-size: 13px; font-weight:600">PostgreSQL DB State</span>
-                                        <span class="machine-prob-badge healthy" id="status-postgres-badge">CONNECTED</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-glass); padding: 12px; border-radius: 10px; background:rgba(255,255,255,0.01)">
-                                        <span style="font-size: 13px; font-weight:600">Apache Solr Search Logs</span>
-                                        <span class="machine-prob-badge healthy" id="status-solr-badge">INDEXED</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Distribution -->
-                            <div class="glass-card">
-                                <h3 class="card-title">Plant Health Index</h3>
-                                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
-                                    <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                                        <span>Healthy Index</span>
-                                        <strong id="dash-healthy-percent">--%</strong>
-                                    </div>
-                                    <div class="prediction-val-bar">
-                                        <div class="prediction-val-fill healthy" id="dash-healthy-fill" style="width: 0%"></div>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 6px;">
-                                        <span>Warning / Critical</span>
-                                        <strong id="dash-risk-percent">--%</strong>
-                                    </div>
-                                    <div class="prediction-val-bar">
-                                        <div class="prediction-val-fill warning" id="dash-risk-fill" style="width: 0%"></div>
-                                    </div>
-                                </div>
-                            </div>
+                    <!-- Row 2: Distribution Charts -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 28px;">
+                        <!-- Risk Distribution -->
+                        <div class="glass-card">
+                            <h3 class="card-title">Risk Distribution Chart</h3>
+                            <p style="color:var(--text-secondary); font-size:11px; margin-top:2px;">Breakdown of machines by active operational risk category.</p>
+                            <div id="risk-distribution-chart-container"></div>
                         </div>
+                        <!-- Failure Distribution -->
+                        <div class="glass-card">
+                            <h3 class="card-title">Failure Distribution Chart</h3>
+                            <p style="color:var(--text-secondary); font-size:11px; margin-top:2px;">Distribution of active failure modes predicted by ML models.</p>
+                            <div id="failure-distribution-chart-container" style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;"></div>
+                        </div>
+                    </div>
 
-                        <!-- Alerts feed -->
-                        <div class="glass-card" style="display: flex; flex-direction: column; min-height: 380px;">
-                            <div style="border-bottom: 1px solid var(--border-glass); padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
-                                <h3 class="card-title" style="margin:0;">System Event Feed</h3>
-                                <span class="part-badge instock">SNS Topic</span>
-                            </div>
-                            <div class="alerts-list" id="alerts-list-container" style="flex:1; overflow-y:auto; margin-top: 14px; max-height:330px;">
-                                <!-- Loaded dynamically -->
-                            </div>
+                    <!-- Row 3: Critical Machines Table -->
+                    <div class="glass-card">
+                        <h3 class="card-title">Critical Machines Table</h3>
+                        <p style="color:var(--text-secondary); font-size:11px; margin-top:2px; margin-bottom: 14px;">List of machines currently flagged as Critical based on predictive failure risk.</p>
+                        <div style="overflow-x: auto;">
+                            <table class="parts-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                <thead>
+                                    <tr>
+                                        <th>Machine ID</th>
+                                        <th>Failure Probability</th>
+                                        <th>Risk Level</th>
+                                        <th>Recommendation</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="critical-machines-table-body">
+                                    <!-- Loaded dynamically -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -1211,6 +1194,7 @@
                     document.getElementById('kpi-critical-machines').textContent = machines.filter(m => getMachineStatus(m.failure_probability) === 'Critical').length;
                     
                     renderMachineList();
+                    renderDashboardView();
                     if (activePage === 'analytics') {
                         renderAnalyticsView();
                     }
@@ -1616,6 +1600,111 @@
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        function renderDashboardView() {
+            const totalCount = machines.length;
+            const healthyCount = machines.filter(m => getMachineStatus(m.failure_probability) === 'Healthy').length;
+            const warningCount = machines.filter(m => getMachineStatus(m.failure_probability) === 'Warning').length;
+            const criticalCount = machines.filter(m => getMachineStatus(m.failure_probability) === 'Critical').length;
+
+            // 1. Risk Distribution Chart
+            const hPct = totalCount ? (healthyCount / totalCount) * 100 : 0;
+            const wPct = totalCount ? (warningCount / totalCount) * 100 : 0;
+            const cPct = totalCount ? (criticalCount / totalCount) * 100 : 0;
+
+            const riskContainer = document.getElementById('risk-distribution-chart-container');
+            if (riskContainer) {
+                riskContainer.innerHTML = `
+                    <div style="display: flex; height: 18px; border-radius: 9px; overflow: hidden; background: rgba(255,255,255,0.05); margin-top: 24px;">
+                        ${healthyCount > 0 ? `<div style="width: ${hPct}%; background: var(--success); transition: width 0.3s"></div>` : ''}
+                        ${warningCount > 0 ? `<div style="width: ${wPct}%; background: var(--warning); transition: width 0.3s"></div>` : ''}
+                        ${criticalCount > 0 ? `<div style="width: ${cPct}%; background: var(--danger); transition: width 0.3s"></div>` : ''}
+                    </div>
+                    <div style="display: flex; justify-content: space-around; margin-top: 20px; flex-wrap: wrap; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px;">
+                            <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--success)"></span>
+                            <span>Healthy: <strong>${healthyCount}</strong> (${Math.round(hPct)}%)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px;">
+                            <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--warning)"></span>
+                            <span>Warning: <strong>${warningCount}</strong> (${Math.round(wPct)}%)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px;">
+                            <span style="width: 10px; height: 10px; border-radius: 50%; background: var(--danger)"></span>
+                            <span>Critical: <strong>${criticalCount}</strong> (${Math.round(cPct)}%)</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 2. Failure Distribution Chart
+            const failureCounts = {};
+            machines.forEach(m => {
+                const mode = m.predicted_failure || 'Normal Operation';
+                failureCounts[mode] = (failureCounts[mode] || 0) + 1;
+            });
+            const failureData = Object.entries(failureCounts).map(([mode, count]) => ({
+                mode,
+                count,
+                pct: totalCount ? Math.round((count / totalCount) * 100) : 0
+            })).sort((a, b) => b.count - a.count);
+
+            const failureContainer = document.getElementById('failure-distribution-chart-container');
+            if (failureContainer) {
+                failureContainer.innerHTML = '';
+                if (failureData.length === 0) {
+                    failureContainer.innerHTML = `<p style="font-size: 12px; color: var(--text-muted); text-align: center;">No predictions available</p>`;
+                } else {
+                    failureData.forEach(f => {
+                        const row = document.createElement('div');
+                        row.style.display = 'flex';
+                        row.style.flexDirection = 'column';
+                        row.style.gap = '4px';
+                        row.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                                <span style="color: var(--text-secondary)">${f.mode}</span>
+                                <strong>${f.count} unit(s) (${f.pct}%)</strong>
+                            </div>
+                            <div class="prediction-val-bar" style="height: 6px;">
+                                <div class="prediction-val-fill" style="width: ${f.pct}%; background: ${f.mode === 'Normal Operation' ? 'var(--success)' : 'var(--primary)'}; height: 100%; border-radius: 3px;"></div>
+                            </div>
+                        `;
+                        failureContainer.appendChild(row);
+                    });
+                }
+            }
+
+            // 3. Critical Machines Table
+            const criticalTableBody = document.getElementById('critical-machines-table-body');
+            if (criticalTableBody) {
+                criticalTableBody.innerHTML = '';
+                const criticalMachines = machines.filter(m => getMachineStatus(m.failure_probability) === 'Critical');
+                if (criticalMachines.length === 0) {
+                    criticalTableBody.innerHTML = `
+                        <tr>
+                            <td colSpan="4" style="text-align: center; color: var(--text-muted); padding: 28px;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="margin: 0 auto 8px; display: block;">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                </svg>
+                                All units operating within safe parameters. No critical machines detected.
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    criticalMachines.forEach(m => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><strong>${m.machine_id}</strong></td>
+                            <td style="color: var(--danger); font-weight: 700;">${Math.round(m.failure_probability * 100)}%</td>
+                            <td><span class="machine-prob-badge danger">Critical</span></td>
+                            <td style="font-size: 12px;">${m.recommendation}</td>
+                        `;
+                        criticalTableBody.appendChild(tr);
+                    });
+                }
+            }
         }
 
         // ----------------- RENDER SUB-METHODS FOR MACHINES VIEW -----------------
