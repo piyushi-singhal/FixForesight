@@ -1,7 +1,9 @@
 import { configureStore, createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
-// Dynamic API URL base targeting backend container port (8000)
-const API_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
+// Resolve backend API URL dynamically based on current page origin/port
+const API_URL = window.location.port === '3000'
+  ? `${window.location.protocol}//${window.location.hostname}:8000`
+  : window.location.origin;
 
 // Async Thunks
 export const fetchMachines = createAsyncThunk(
@@ -95,7 +97,7 @@ const machinesSlice = createSlice({
   name: 'machines',
   initialState: {
     list: [],
-    activeMachineId: 1,
+    activeMachineId: 'M101', // Conforming to contract's string format (e.g. M101)
     loading: false,
     error: null
   },

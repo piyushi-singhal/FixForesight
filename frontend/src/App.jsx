@@ -53,6 +53,12 @@ export default function App() {
   // Local State
   const [activeTab, setActiveTab] = useState('temperature'); // temperature, vibration, pressure
   const [sysHealth, setSysHealth] = useState({ status: 'healthy', postgres: 'healthy', localstack: 'healthy', solr: 'healthy' });
+  const [analytics, setAnalytics] = useState({ healthy: 60, warning: 40, critical: 0 });
+
+  // Resolve backend API URL dynamically based on current page origin/port
+  const apiBase = window.location.port === '3000'
+    ? `${window.location.protocol}//${window.location.hostname}:8000`
+    : window.location.origin;
 
   // Fetch initial data
   useEffect(() => {
@@ -64,6 +70,7 @@ export default function App() {
     const interval = setInterval(() => {
       dispatch(fetchMachines());
       dispatch(fetchAlerts());
+      checkHealth();
     }, 3000);
 
     return () => clearInterval(interval);
@@ -88,10 +95,16 @@ export default function App() {
 
   const checkHealth = async () => {
     try {
-      const response = await fetch(`${window.location.origin}/health`);
+      const response = await fetch(`${apiBase}/health`);
       if (response.ok) {
         const data = await response.json();
         setSysHealth(data);
+      }
+      
+      const analResp = await fetch(`${apiBase}/analytics`);
+      if (analResp.ok) {
+        const analData = await analResp.json();
+        setAnalytics(analData);
       }
     } catch (e) {
       setSysHealth({ status: 'offline', postgres: 'unhealthy', localstack: 'unhealthy', solr: 'unhealthy' });
@@ -118,21 +131,21 @@ export default function App() {
     dispatch(createWorkOrder({
       machineId: activeId,
       priority: rec.priority,
-      actionRequired: rec.recommended_action
+      actionRequired: rec.recommendation
     }));
   };
 
   // Helper: color code for risk levels
   const getRiskClass = (prob) => {
-    if (prob >= 0.7) return 'danger';
-    if (prob >= 0.3) return 'warning';
+    if (prob >= 70) return 'danger';
+    if (prob >= 30) return 'warning';
     return 'healthy';
   };
 
   // Helper: dynamic gauge properties
-  const selectedMachine = machines.find(m => m.id === activeId) || { name: `Machine-${String(activeId).padStart(3, '0')}`, failure_probability: 0.05 };
-  const currentRisk = selectedMachine.failure_probability;
-  const strokeDash = currentRisk * 439.6; // Gauge circumference = 2 * pi * 70
+  const selectedMachine = machines.find(m => m.machine_id === activeId) || { machine_name: `Machine-${activeId}`, status: 'Healthy', rpm: 1000 };
+  const currentRisk = detail && detail.prediction ? detail.prediction.failure_probability : 5;
+  const strokeDash = (currentRisk / 100.0) * 439.6; // Gauge circumference = 2 * pi * 70
 
   // Helper: SVG Path generator for sensor trend history
   const getSvgPathData = (history, key) => {
@@ -191,8 +204,11 @@ export default function App() {
           )}
         </form>
 
-        {/* Infrastructure Status indicators */}
+        {/* Analytics & Infrastructure Status */}
         <div className="system-status">
+          <div className="status-badge" style={{ borderColor: 'rgba(255,255,255,0.12)', fontSize: '11px' }}>
+            Analytics: <span style={{color:'var(--success)', marginLeft:'4px'}}>{analytics.healthy}% H</span> | <span style={{color:'var(--warning)'}}>{analytics.warning}% W</span> | <span style={{color:'var(--danger)'}}>{analytics.critical}% C</span>
+          </div>
           <div className="status-badge" title="FastAPI API Status">
             <Wifi size={13} className={sysHealth.status !== 'offline' ? 'text-success' : 'text-danger'} />
             API: <span style={{ color: sysHealth.status !== 'offline' ? '#10b981' : '#f43f5e' }}>{sysHealth.status}</span>
@@ -200,14 +216,6 @@ export default function App() {
           <div className="status-badge" title="PostgreSQL DB Status">
             <Database size={13} className={sysHealth.postgres === 'healthy' ? 'text-success' : 'text-danger'} />
             DB
-          </div>
-          <div className="status-badge" title="AWS simulated SQS/SNS Status">
-            <Activity size={13} className={sysHealth.localstack === 'healthy' ? 'text-success' : 'text-danger'} />
-            AWS-Queue
-          </div>
-          <div className="status-badge" title="Solr incidents index Status">
-            <Search size={13} className={sysHealth.solr === 'healthy' ? 'text-success' : 'text-danger'} />
-            Solr
           </div>
           <button className="status-badge" onClick={checkHealth} style={{ cursor: 'pointer', border: '1px solid var(--border-glass)', outline: 'none' }}>
             <RefreshCw size={12} />
@@ -233,36 +241,28 @@ export default function App() {
               <div style={{ display: 'flex', justifyContent: 'center', margin: '40px 0' }}><div className="spinner"></div></div>
             ) : (
               machines.map((m) => {
-                const riskLevel = getRiskClass(m.failure_probability);
+                const riskLevel = m.status === 'Critical' ? 'danger' : m.status === 'Warning' ? 'warning' : 'healthy';
                 return (
                   <div
-                    key={m.id}
-                    className={`machine-item ${activeId === m.id ? 'active' : ''}`}
-                    onClick={() => handleMachineSelect(m.id)}
+                    key={m.machine_id}
+                    className={`machine-item ${activeId === m.machine_id ? 'active' : ''}`}
+                    onClick={() => handleMachineSelect(m.machine_id)}
                   >
                     <div className="machine-item-top">
                       <div className="machine-name-group">
                         <Cpu size={14} className={riskLevel === 'danger' ? 'text-danger' : riskLevel === 'warning' ? 'text-warning' : 'text-success'} />
-                        <span className="machine-name">{m.name}</span>
+                        <span className="machine-name">{m.machine_name}</span>
                       </div>
                       <span className={`machine-prob-badge ${riskLevel}`}>
-                        {(m.failure_probability * 100).toFixed(0)}% Risk
+                        {m.status}
                       </span>
                     </div>
 
                     <div className="machine-metrics-row">
                       <span>T: {m.temperature.toFixed(1)}°C</span>
-                      <span>V: {m.vibration.toFixed(1)}m/s²</span>
                       <span>P: {m.pressure.toFixed(0)} PSI</span>
-                    </div>
-
-                    <div className="machine-item-bottom">
-                      <span>{m.predicted_failure_type || 'Healthy'}</span>
-                      {m.open_work_orders > 0 && (
-                        <span style={{ color: '#0ea5e9', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <Wrench size={10} /> Active order
-                        </span>
-                      )}
+                      <span>V: {m.vibration.toFixed(1)}m/s²</span>
+                      <span>RPM: {m.rpm}</span>
                     </div>
                   </div>
                 );
@@ -291,7 +291,7 @@ export default function App() {
                   searchResults.docs.map((doc, idx) => (
                     <div key={doc.id || idx} className="search-result-item">
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                        <strong>Machine-{String(doc.machine_id).padStart(3, '0')}</strong>
+                        <strong>Machine-{doc.machine_id}</strong>
                         <span style={{ color: 'var(--text-muted)' }}>{new Date(doc.date).toLocaleDateString()}</span>
                       </div>
                       <p style={{ fontSize: '12px', marginTop: '4px' }}>
@@ -329,18 +329,20 @@ export default function App() {
                   />
                 </svg>
                 <div className="gauge-text">
-                  <span className="gauge-val" style={{ color: currentRisk >= 0.7 ? 'var(--danger)' : currentRisk >= 0.3 ? 'var(--warning)' : 'var(--success)' }}>
-                    {(currentRisk * 100).toFixed(0)}%
+                  <span className="gauge-val" style={{ color: currentRisk >= 70 ? 'var(--danger)' : currentRisk >= 30 ? 'var(--warning)' : 'var(--success)' }}>
+                    {currentRisk.toFixed(0)}%
                   </span>
-                  <span className="gauge-lbl">Failure</span>
+                  <span className="gauge-lbl">Risk</span>
                 </div>
               </div>
 
               <div style={{ marginTop: '10px' }}>
-                <h4 style={{ fontSize: '16px', fontWeight: 700 }}>{selectedMachine.predicted_failure_type || 'Healthy'}</h4>
-                {selectedMachine.time_to_failure_hours ? (
+                <h4 style={{ fontSize: '16px', fontWeight: 700 }}>
+                  {detail && detail.prediction ? detail.prediction.predicted_failure : 'Normal Operation'}
+                </h4>
+                {detail && detail.prediction && detail.prediction.time_to_failure !== 'N/A' ? (
                   <p style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center', marginTop: '4px' }}>
-                    <Clock size={12} className="text-warning" /> Est. failure in: <strong>{selectedMachine.time_to_failure_hours} hours</strong>
+                    <Clock size={12} className="text-warning" /> Est. failure: <strong>{detail.prediction.time_to_failure}</strong>
                   </p>
                 ) : (
                   <p style={{ fontSize: '12px', color: 'var(--success)', marginTop: '4px' }}>Vitals operating in healthy ranges</p>
@@ -424,15 +426,15 @@ export default function App() {
                       Generated: {new Date(rec.created_at).toLocaleString()}
                     </p>
                   </div>
-                  <span className={`rec-action-badge ${rec.priority}`}>
+                  <span className={`rec-action-badge ${rec.priority.toLowerCase()}`}>
                     <ShieldAlert size={14} />
-                    {rec.priority} Priority
+                    {rec.priority} Priority (Conf: {rec.confidence}%)
                   </span>
                 </div>
 
                 <div style={{ padding: '16px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-glass)', borderRadius: '10px' }}>
                   <h4 style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>Action Items</h4>
-                  <p style={{ fontSize: '13px', marginTop: '6px', lineHeight: '1.5' }}>{rec.recommended_action}</p>
+                  <p style={{ fontSize: '13px', marginTop: '6px', lineHeight: '1.5' }}>{rec.recommendation}</p>
                 </div>
 
                 {/* Parts Requirement checklist */}
@@ -517,12 +519,12 @@ export default function App() {
               <p style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '20px' }}>No warnings logged.</p>
             ) : (
               alerts.map((a) => {
-                const isCritical = a.subject && a.subject.includes('CRITICAL');
-                const isHigh = a.subject && a.subject.includes('HIGH');
+                const isCritical = a.severity && a.severity.toLowerCase() === 'critical';
+                const isHigh = a.severity && a.severity.toLowerCase() === 'high';
                 const cardClass = isCritical ? 'critical' : isHigh ? 'warning' : 'info';
                 
                 return (
-                  <div key={a.id} className={`alert-card ${cardClass}`}>
+                  <div key={a.alert_id} className={`alert-card ${cardClass}`}>
                     <div className="alert-icon-wrapper">
                       {isCritical ? (
                         <XCircle size={16} className="text-danger" />
@@ -533,9 +535,9 @@ export default function App() {
                       )}
                     </div>
                     <div className="alert-content">
-                      <span className="alert-subject">{a.subject}</span>
+                      <span className="alert-subject" style={{fontWeight:600}}>{a.severity} Risk: Machine-{a.machine_id}</span>
                       <p className="alert-message">{a.message}</p>
-                      <span className="alert-time">{new Date(a.received_at).toLocaleTimeString()}</span>
+                      <span className="alert-time">{new Date(a.created_at).toLocaleTimeString()}</span>
                     </div>
                   </div>
                 );

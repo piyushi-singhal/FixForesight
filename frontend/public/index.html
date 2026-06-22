@@ -608,6 +608,9 @@
 
             <!-- Vitals status pills -->
             <div class="system-status">
+                <div class="status-badge" id="badge-analytics" style="border-color: rgba(255,255,255,0.12); font-size:11px;">
+                    Analytics: <span id="anal-healthy" style="color:var(--success); margin-left:4px;">--% H</span> | <span id="anal-warning" style="color:var(--warning)">--% W</span> | <span id="anal-critical" style="color:var(--danger)">--% C</span>
+                </div>
                 <div class="status-badge" id="badge-api">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
                         <path d="M12 18h.01M8 14a5 5 0 018 0M5 10a9 9 0 0114 0M2 6a13 13 0 0120 0" />
@@ -620,12 +623,6 @@
                         <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4 3 9 3s9-1.34 9-3" />
                     </svg>
                     DB
-                </div>
-                <div class="status-badge">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
-                        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    Queue
                 </div>
                 <button onclick="window.location.reload()" style="background:transparent; border:none; color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; justify-content:center; padding: 4px;">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -728,7 +725,7 @@
         const API_BASE = window.location.origin;
         
         let machines = [];
-        let activeId = 1;
+        let activeId = 'M101';
         let detail = null;
         let rec = null;
         let alerts = [];
@@ -771,6 +768,21 @@
                 }
             } catch(e) {
                 console.error("Alerts fetch failure", e);
+            }
+        }
+
+        // Fetch Analytics
+        async function fetchAnalytics() {
+            try {
+                const r = await fetch(`${API_BASE}/analytics`);
+                if (r.ok) {
+                    const data = await r.json();
+                    document.getElementById('anal-healthy').textContent = `${data.healthy}% H`;
+                    document.getElementById('anal-warning').textContent = `${data.warning}% W`;
+                    document.getElementById('anal-critical').textContent = `${data.critical}% C`;
+                }
+            } catch(e) {
+                console.error("Analytics fetch failure", e);
             }
         }
 
@@ -873,7 +885,7 @@
                     body: JSON.stringify({
                         machine_id: activeId,
                         priority: rec.priority,
-                        action_required: rec.recommended_action
+                        action_required: rec.recommendation
                     })
                 });
                 if (r.ok) {
@@ -882,6 +894,7 @@
                     loadMachines();
                     loadDetails(activeId);
                     loadRecommendations(activeId);
+                    fetchAnalytics();
                 }
             } catch(e) {
                 console.error("WO generate failure", e);
@@ -896,14 +909,13 @@
             container.innerHTML = '';
             
             machines.forEach(m => {
-                const prob = m.failure_probability;
-                const riskLevel = prob >= 0.7 ? 'danger' : prob >= 0.3 ? 'warning' : 'healthy';
-                const isActive = m.id === activeId;
+                const riskLevel = m.status === 'Critical' ? 'danger' : m.status === 'Warning' ? 'warning' : 'healthy';
+                const isActive = m.machine_id === activeId;
                 
                 const item = document.createElement('div');
                 item.className = `machine-item ${isActive ? 'active' : ''}`;
-                item.id = `m-item-${m.id}`;
-                item.onclick = () => selectMachine(m.id);
+                item.id = `m-item-${m.machine_id}`;
+                item.onclick = () => selectMachine(m.machine_id);
                 
                 item.innerHTML = `
                     <div class="machine-item-top">
@@ -912,18 +924,15 @@
                                 <circle cx="12" cy="12" r="10" />
                                 <circle cx="12" cy="12" r="4" />
                             </svg>
-                            <span>${m.name}</span>
+                            <span>${m.machine_name}</span>
                         </div>
-                        <span class="machine-prob-badge ${riskLevel}">${(prob*100).toFixed(0)}% Risk</span>
+                        <span class="machine-prob-badge ${riskLevel}">${m.status}</span>
                     </div>
                     <div class="machine-metrics-row">
                         <span>T: ${m.temperature.toFixed(1)}°C</span>
-                        <span>V: ${m.vibration.toFixed(1)}m/s²</span>
                         <span>P: ${m.pressure.toFixed(0)} PSI</span>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-muted); margin-top:2px;">
-                        <span>${m.predicted_failure_type || 'Healthy'}</span>
-                        ${m.open_work_orders > 0 ? `<span style="color:#0ea5e9; font-weight:600;">Active order</span>` : ''}
+                        <span>V: ${m.vibration.toFixed(1)}m/s²</span>
+                        <span>RPM: ${m.rpm}</span>
                     </div>
                 `;
                 container.appendChild(item);
@@ -931,11 +940,11 @@
         }
 
         function renderGauge() {
-            const prob = detail ? detail.prediction.failure_probability : 0.05;
-            const label = detail ? detail.prediction.predicted_failure_type : 'Normal Operation';
-            const hours = detail ? detail.prediction.time_to_failure_hours : null;
+            const prob = detail && detail.prediction ? detail.prediction.failure_probability : 5;
+            const label = detail && detail.prediction ? detail.prediction.predicted_failure : 'Normal Operation';
+            const timeVal = detail && detail.prediction ? detail.prediction.time_to_failure : 'N/A';
             
-            const strokeDash = prob * 376.8; // 2 * pi * 60 = 376.8
+            const strokeDash = (prob / 100.0) * 376.8; // 2 * pi * 60 = 376.8
             
             const fill = document.getElementById('gauge-fill');
             const valText = document.getElementById('gauge-val-text');
@@ -943,20 +952,20 @@
             const timeText = document.getElementById('gauge-time-remaining');
             
             fill.setAttribute('stroke-dasharray', `${strokeDash} 376.8`);
-            fill.className = `gauge-fill ${prob >= 0.7 ? 'danger' : prob >= 0.3 ? 'warning' : 'healthy'}`;
+            fill.className = `gauge-fill ${prob >= 70 ? 'danger' : prob >= 30 ? 'warning' : 'healthy'}`;
             
-            valText.textContent = `${(prob*100).toFixed(0)}%`;
-            valText.style.color = prob >= 0.7 ? 'var(--danger)' : prob >= 0.3 ? 'var(--warning)' : 'var(--success)';
+            valText.textContent = `${prob.toFixed(0)}%`;
+            valText.style.color = prob >= 70 ? 'var(--danger)' : prob >= 30 ? 'var(--warning)' : 'var(--success)';
             
             typeText.textContent = label;
             
-            if (hours) {
+            if (timeVal && timeVal !== 'N/A') {
                 timeText.style.display = 'block';
                 timeText.innerHTML = `
                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" style="display:inline; margin-right:2px; vertical-align:middle;">
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
-                    </svg> Est. failure: <strong>${hours} hrs</strong>
+                    </svg> Est. failure: <strong>${timeVal}</strong>
                 `;
             } else {
                 timeText.style.display = 'none';
@@ -1150,11 +1159,11 @@
                         </h3>
                         <p style="font-size:9px; color:var(--text-muted); margin-top:2px;">Generated: ${new Date(rec.created_at).toLocaleString()}</p>
                     </div>
-                    <span class="rec-priority-badge ${rec.priority}">${rec.priority} Priority</span>
+                    <span class="rec-priority-badge ${rec.priority.toLowerCase()}">${rec.priority} Priority (Conf: ${rec.confidence}%)</span>
                 </div>
                 <div class="rec-action-box">
                     <span style="font-size:9px; font-weight:700; color:var(--text-muted); text-transform:uppercase; tracking-wider;">Remediation Steps</span>
-                    <p style="font-size:12px; margin-top:4px; line-height:1.5;">${rec.recommended_action}</p>
+                    <p style="font-size:12px; margin-top:4px; line-height:1.5;">${rec.recommendation}</p>
                 </div>
                 <div>
                     <span style="font-size:9px; font-weight:700; color:var(--text-muted); text-transform:uppercase; tracking-wider;">Required Spare Parts Checklist</span>
@@ -1184,8 +1193,8 @@
             }
 
             alerts.forEach(a => {
-                const isCrit = a.subject && a.subject.includes('CRITICAL');
-                const isHigh = a.subject && a.subject.includes('HIGH');
+                const isCrit = a.severity && a.severity.toLowerCase() === 'critical';
+                const isHigh = a.severity && a.severity.toLowerCase() === 'high';
                 const cls = isCrit ? 'critical' : isHigh ? 'warning' : 'info';
                 
                 const card = document.createElement('div');
@@ -1195,10 +1204,10 @@
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="${isCrit ? 'var(--danger)' : isHigh ? 'var(--warning)' : 'var(--info)'}" stroke-width="3">
                             <circle cx="12" cy="12" r="10" />
                         </svg>
-                        <span class="alert-subject" style="color:${isCrit ? 'var(--danger)' : isHigh ? 'var(--warning)' : '#f8fafc'}">${a.subject}</span>
+                        <span class="alert-subject" style="color:${isCrit ? 'var(--danger)' : isHigh ? 'var(--warning)' : '#f8fafc'}">${a.severity} Risk: Machine-${a.machine_id}</span>
                     </div>
                     <p class="alert-message">${a.message}</p>
-                    <span class="alert-time">${new Date(a.received_at).toLocaleTimeString()}</span>
+                    <span class="alert-time">${new Date(a.created_at).toLocaleTimeString()}</span>
                 `;
                 container.appendChild(card);
             });
@@ -1220,11 +1229,11 @@
                 const item = document.createElement('div');
                 item.className = 'search-item';
                 item.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--primary);">
-                        <span>Unit-${String(doc.machine_id).padStart(3, '0')}</span>
+                    <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--primary); font-size: 12px;">
+                        <strong>Machine-${doc.machine_id}</strong>
                         <span style="color:var(--text-muted)">${new Date(doc.date).toLocaleDateString()}</span>
                     </div>
-                    <p><span style="color:var(--danger)">Signature:</span> ${doc.failure_signature}</p>
+                    <p style="margin-top:2px;"><span style="color:var(--danger)">Signature:</span> ${doc.failure_signature}</p>
                     <p><span style="color:var(--success)">Correction:</span> ${doc.action_taken}</p>
                     <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">
                         Outcome: <span style="color:var(--success); font-weight:600">${doc.outcome}</span>
@@ -1239,13 +1248,25 @@
             await fetchHealth();
             await loadMachines();
             await loadAlerts();
+            await fetchAnalytics();
             
             if (machines.length > 0) {
-                selectMachine(machines[0].id);
+                const exists = machines.some(m => m.machine_id === activeId);
+                selectMachine(exists ? activeId : machines[0].machine_id);
             }
         }
         
         init();
+
+        // Setup live vitals loop polling
+        setInterval(async () => {
+            await loadMachines();
+            await loadAlerts();
+            await fetchAnalytics();
+            if (activeId) {
+                await loadDetails(activeId);
+            }
+        }, 3000);
     </script>
 </body>
 </html>
