@@ -64,6 +64,10 @@ def prepare_xy(df: pd.DataFrame, target_col: str = "Machine failure"):
         X[target_col] = df[target_col]
 
     y = X.pop(target_col)
+    
+    # Sanitize feature names for XGBoost compatibility (remove brackets, angle brackets, etc.)
+    X.columns = [col.replace('[', '_').replace(']', '_').replace('<', '_').replace('>', '_') for col in X.columns]
+    
     return X, y
 
 

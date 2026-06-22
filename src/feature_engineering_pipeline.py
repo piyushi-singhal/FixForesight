@@ -278,8 +278,8 @@ def main():
     # 5) Create engineered features
     df, feat_before, feat_after = create_engineered_features(df)
 
-    # Numeric columns for outlier handling
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    # Numeric columns for outlier handling (exclude target if present)
+    numeric_cols = [c for c in df.select_dtypes(include=[np.number]).columns.tolist() if c.lower().replace(' ', '') != 'machinefailure']
 
     # 6) Handle outliers
     df = handle_outliers_iqr(df, numeric_cols)
