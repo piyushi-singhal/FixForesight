@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: pdm_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ./backend/db/seed.sql:/docker-entrypoint-initdb.d/2-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pdm_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pdm-network
+
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3,sqs,sns
+      - AWS_DEFAULT_REGION=us-east-1
+    volumes:
+      - "./infra/localstack:/etc/localstack/init/ready.d"
+      - localstack_data:/var/lib/localstack
+    healthcheck:
+      test: ["CMD-SHELL", "awslocal --version || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pdm-network
+
+  solr:
+    image: solr:9-alpine
+    container_name: solr
+    ports:
+      - "8983:8983"
+    command: solr-precreate incidents
+    volumes:
+      - solr_data:/var/solr/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8983/solr/admin/cores?action=STATUS || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pdm-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/pdm_db
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=mock
+      - AWS_SECRET_ACCESS_KEY=mock
+      - AWS_DEFAULT_REGION=us-east-1
+      - SOLR_URL=http://solr:8983/solr/incidents
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+      solr:
+        condition: service_healthy
+    networks:
+      - pdm-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - pdm-network
+
+volumes:
+  postgres_data:
+  localstack_data:
+  solr_data:
+
+networks:
+  pdm-network:
+    name: pdm-network
+    driver: bridge
