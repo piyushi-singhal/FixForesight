@@ -8,21 +8,822 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+    
+    <!-- CDNs: React, Redux Toolkit, Babel Standalone, Tailwind CSS -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@reduxjs/toolkit@2.2.1/dist/redux-toolkit.umd.js" crossorigin></script>
+    <script src="https://unpkg.com/react-redux@9.1.0/dist/react-redux.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Tailwind Configuration for premium styling -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              heading: ['Outfit', 'sans-serif'],
+              body: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              bgDeep: '#070a13',
+              bgSurface: 'rgba(15, 23, 42, 0.65)',
+              primary: '#6366f1',
+              success: '#10b981',
+              warning: '#f59e0b',
+              danger: '#f43f5e',
+              info: '#0ea5e9',
+            }
+          }
         }
+      }
+    </script>
+
+    <style>
         body {
-            background-color: #0b0f19;
-            color: #f3f4f6;
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
+            background-color: #070a13;
+            color: #f8fafc;
+            background-image: 
+              radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+              radial-gradient(circle at 90% 80%, rgba(244, 63, 94, 0.04) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 15px 35px -8px rgba(0, 0, 0, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+        @keyframes pulse-glow {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+        .glow-pulse::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: 50%;
+            border: 1px solid #10b981;
+            animation: pulse-glow 1.5s infinite;
         }
     </style>
 </head>
-<body>
+<body class="font-body overflow-x-hidden text-[#f8fafc]">
     <div id="root"></div>
+
+    <!-- React App Script Compiled in browser via Babel -->
+    <script type="text/babel">
+        const { useEffect, useState, useMemo } = React;
+        const { Provider, useDispatch, useSelector } = ReactRedux;
+        const { configureStore, createSlice, createAsyncThunk } = RTK;
+
+        // Dynamic Backend Host
+        const API_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
+
+        // ----------------- SVGs Inline Icons -----------------
+        const Icons = {
+            Cpu: () => (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <rect x="4" y="4" width="16" height="16" rx="2" />
+                    <rect x="9" y="9" width="6" height="6" rx="1" />
+                    <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3" />
+                </svg>
+            ),
+            Wifi: ({ className }) => (
+                <svg className={`w-4 h-4 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 14a5 5 0 018 0M5 10a9 9 0 0114 0M2 6a13 13 0 0120 0" />
+                </svg>
+            ),
+            Database: ({ className }) => (
+                <svg className={`w-4 h-4 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <ellipse cx="12" cy="5" rx="9" ry="3" />
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4 3 9 3s9-1.34 9-3" />
+                </svg>
+            ),
+            Activity: ({ className }) => (
+                <svg className={`w-4 h-4 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            ),
+            Search: ({ className }) => (
+                <svg className={`w-4 h-4 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            ),
+            Refresh: () => (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89" />
+                </svg>
+            ),
+            Clock: ({ className }) => (
+                <svg className={`w-4 h-4 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                </svg>
+            ),
+            Wrench: ({ className }) => (
+                <svg className={`w-4.5 h-4.5 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                </svg>
+            ),
+            AlertTriangle: ({ className }) => (
+                <svg className={`w-4 h-4 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            ),
+            CheckCircle: ({ className }) => (
+                <svg className={`w-4.5 h-4.5 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            ),
+            XCircle: ({ className }) => (
+                <svg className={`w-4 h-4 ${className}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            )
+        };
+
+        // ----------------- Async Thunks -----------------
+        const fetchMachines = createAsyncThunk('machines/fetchMachines', async () => {
+            const response = await fetch(`${API_URL}/machines`);
+            return await response.json();
+        });
+
+        const fetchMachineRisk = createAsyncThunk('detail/fetchMachineRisk', async (id) => {
+            const response = await fetch(`${API_URL}/machines/${id}/risk`);
+            return await response.json();
+        });
+
+        const fetchMachineRecommendations = createAsyncThunk('recommendation/fetchMachineRecommendations', async (id) => {
+            const response = await fetch(`${API_URL}/machines/${id}/recommendations`);
+            return await response.json();
+        });
+
+        const createWorkOrder = createAsyncThunk('recommendation/createWorkOrder', async ({ machineId, priority, actionRequired }) => {
+            const response = await fetch(`${API_URL}/work-orders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    machine_id: machineId,
+                    priority: priority,
+                    action_required: actionRequired
+                })
+            });
+            return await response.json();
+        });
+
+        const fetchAlerts = createAsyncThunk('alerts/fetchAlerts', async () => {
+            const response = await fetch(`${API_URL}/alerts`);
+            return await response.json();
+        });
+
+        const searchIncidents = createAsyncThunk('search/searchIncidents', async (query) => {
+            const response = await fetch(`${API_URL}/incidents/search?q=${encodeURIComponent(query)}`);
+            return await response.json();
+        });
+
+        // ----------------- Slices -----------------
+        const machinesSlice = createSlice({
+            name: 'machines',
+            initialState: { list: [], activeMachineId: 1, loading: false },
+            reducers: {
+                setActiveMachineId: (state, action) => { state.activeMachineId = action.payload; }
+            },
+            extraReducers: (builder) => {
+                builder.addCase(fetchMachines.fulfilled, (state, action) => {
+                    state.list = action.payload;
+                    state.loading = false;
+                }).addCase(fetchMachines.pending, (state) => {
+                    state.loading = true;
+                });
+            }
+        });
+
+        const detailSlice = createSlice({
+            name: 'detail',
+            initialState: { data: null, loading: false },
+            reducers: {},
+            extraReducers: (builder) => {
+                builder.addCase(fetchMachineRisk.fulfilled, (state, action) => {
+                    state.data = action.payload;
+                    state.loading = false;
+                }).addCase(fetchMachineRisk.pending, (state) => {
+                    state.loading = true;
+                });
+            }
+        });
+
+        const recommendationSlice = createSlice({
+            name: 'recommendation',
+            initialState: { data: null, loading: false, workOrderSuccess: false, submittingWorkOrder: false },
+            reducers: {
+                resetWorkOrderStatus: (state) => { state.workOrderSuccess = false; }
+            },
+            extraReducers: (builder) => {
+                builder.addCase(fetchMachineRecommendations.fulfilled, (state, action) => {
+                    state.data = action.payload;
+                    state.loading = false;
+                }).addCase(fetchMachineRecommendations.pending, (state) => {
+                    state.loading = true;
+                }).addCase(createWorkOrder.pending, (state) => {
+                    state.submittingWorkOrder = true;
+                }).addCase(createWorkOrder.fulfilled, (state) => {
+                    state.submittingWorkOrder = false;
+                    state.workOrderSuccess = true;
+                });
+            }
+        });
+
+        const alertsSlice = createSlice({
+            name: 'alerts',
+            initialState: { list: [] },
+            reducers: {},
+            extraReducers: (builder) => {
+                builder.addCase(fetchAlerts.fulfilled, (state, action) => {
+                    state.list = action.payload;
+                });
+            }
+        });
+
+        const searchSlice = createSlice({
+            name: 'search',
+            initialState: { query: '', results: null, loading: false },
+            reducers: {
+                setQuery: (state, action) => { state.query = action.payload; },
+                clearSearch: (state) => { state.query = ''; state.results = null; }
+            },
+            extraReducers: (builder) => {
+                builder.addCase(searchIncidents.fulfilled, (state, action) => {
+                    state.results = action.payload;
+                    state.loading = false;
+                }).addCase(searchIncidents.pending, (state) => {
+                    state.loading = true;
+                });
+            }
+        });
+
+        // ----------------- Store Configuration -----------------
+        const store = configureStore({
+            reducer: {
+                machines: machinesSlice.reducer,
+                detail: detailSlice.reducer,
+                recommendation: recommendationSlice.reducer,
+                alerts: alertsSlice.reducer,
+                search: searchSlice.reducer
+            }
+        });
+
+        const { setActiveMachineId } = machinesSlice.actions;
+        const { resetWorkOrderStatus } = recommendationSlice.actions;
+        const { setQuery, clearSearch } = searchSlice.actions;
+
+        // ----------------- Dashboard Main Component -----------------
+        function Dashboard() {
+            const dispatch = useDispatch();
+            
+            // Selector mappings
+            const machines = useSelector(state => state.machines.list);
+            const activeId = useSelector(state => state.machines.activeMachineId);
+            const detail = useSelector(state => state.detail.data);
+            const detailLoading = useSelector(state => state.detail.loading);
+            const rec = useSelector(state => state.recommendation.data);
+            const recLoading = useSelector(state => state.recommendation.loading);
+            const workOrderSuccess = useSelector(state => state.recommendation.workOrderSuccess);
+            const submittingWorkOrder = useSelector(state => state.recommendation.submittingWorkOrder);
+            const alerts = useSelector(state => state.alerts.list);
+            
+            const searchQuery = useSelector(state => state.search.query);
+            const searchResults = useSelector(state => state.search.results);
+
+            const [activeTab, setActiveTab] = useState('temperature');
+            const [sysHealth, setSysHealth] = useState({ status: 'healthy', postgres: 'healthy', localstack: 'healthy', solr: 'healthy' });
+
+            useEffect(() => {
+                dispatch(fetchMachines());
+                dispatch(fetchAlerts());
+                checkHealth();
+
+                // Live polling loop (simulates sensor readings coming in)
+                const interval = setInterval(() => {
+                    dispatch(fetchMachines());
+                    dispatch(fetchAlerts());
+                }, 3000);
+
+                return () => clearInterval(interval);
+            }, [dispatch]);
+
+            useEffect(() => {
+                if (activeId) {
+                    dispatch(fetchMachineRisk(activeId));
+                    dispatch(fetchMachineRecommendations(activeId));
+                }
+            }, [dispatch, activeId]);
+
+            useEffect(() => {
+                if (workOrderSuccess) {
+                    alert("Corrective Work Order authorized successfully! Telemetry returning to normal.");
+                    dispatch(resetWorkOrderStatus());
+                    dispatch(fetchMachines());
+                    dispatch(fetchMachineRisk(activeId));
+                    dispatch(fetchMachineRecommendations(activeId));
+                }
+            }, [workOrderSuccess, dispatch, activeId]);
+
+            const checkHealth = async () => {
+                try {
+                    const response = await fetch(`${API_URL}/health`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        setSysHealth(data);
+                    }
+                } catch (e) {
+                    setSysHealth({ status: 'offline', postgres: 'unhealthy', localstack: 'unhealthy', solr: 'unhealthy' });
+                }
+            };
+
+            const handleSearchSubmit = (e) => {
+                e.preventDefault();
+                if (searchQuery.trim()) {
+                    dispatch(searchIncidents(searchQuery));
+                }
+            };
+
+            const handleCreateWorkOrder = () => {
+                if (!rec || !rec.has_recommendation) return;
+                dispatch(createWorkOrder({
+                    machineId: activeId,
+                    priority: rec.priority,
+                    actionRequired: rec.recommended_action
+                }));
+            };
+
+            const getRiskClass = (prob) => {
+                if (prob >= 0.7) return 'danger';
+                if (prob >= 0.3) return 'warning';
+                return 'healthy';
+            };
+
+            // Selected machine metrics
+            const selectedMachine = useMemo(() => {
+                return machines.find(m => m.id === activeId) || { name: `Machine-${String(activeId).padStart(3, '0')}`, failure_probability: 0.05 };
+            }, [machines, activeId]);
+
+            const currentRisk = selectedMachine.failure_probability;
+            const strokeDash = currentRisk * 439.6;
+
+            // Trend SVG coordinates generator
+            const trendData = useMemo(() => {
+                if (!detail || !detail.sensor_history || detail.sensor_history.length === 0) return { path: '', area: '', points: [] };
+                
+                const width = 500;
+                const height = 200;
+                const padding = 20;
+
+                const values = detail.sensor_history.map(h => h[activeTab]);
+                const maxVal = Math.max(...values, 1) * 1.05;
+                const minVal = Math.min(...values, 0) * 0.95;
+                const valRange = maxVal - minVal || 1;
+
+                const points = detail.sensor_history.map((h, i) => {
+                    const x = padding + (i * (width - padding * 2)) / (detail.sensor_history.length - 1);
+                    const val = h[activeTab];
+                    const y = height - padding - ((val - minVal) * (height - padding * 2)) / valRange;
+                    return { x, y };
+                });
+
+                let path = `M ${points[0].x} ${points[0].y}`;
+                for (let i = 1; i < points.length; i++) {
+                    path += ` L ${points[i].x} ${points[i].y}`;
+                }
+
+                const area = `${path} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
+                return { path, area, points, minVal, maxVal };
+            }, [detail, activeTab]);
+
+            return (
+                <div className="flex flex-col h-screen w-screen overflow-hidden bg-bgDeep text-slate-100">
+                    
+                    {/* Header */}
+                    <header className="flex h-[70px] items-center justify-between px-6 bg-slate-900/80 border-b border-white/5 backdrop-blur-md z-10">
+                        <div className="flex items-center gap-2.5">
+                            <span className="text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]">
+                                <Icons.Cpu />
+                            </span>
+                            <h1 className="text-xl font-extrabold font-heading bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent">
+                                FixForesight
+                            </h1>
+                        </div>
+
+                        {/* Solr Search Panel */}
+                        <form onSubmit={handleSearchSubmit} className="flex items-center bg-white/5 border border-white/5 focus-within:border-indigo-500 focus-within:bg-white/10 rounded-xl px-4 py-2 w-full max-w-[450px] transition-all">
+                            <span className="text-slate-400 mr-2"><Icons.Search /></span>
+                            <input
+                                type="text"
+                                className="bg-transparent border-none outline-none text-xs w-full text-slate-100 placeholder-slate-400"
+                                placeholder="Search historical incidents (e.g. bearing, coolant, overheat)..."
+                                value={searchQuery}
+                                onChange={(e) => dispatch(setQuery(e.target.value))}
+                            />
+                            {searchQuery && (
+                                <button type="button" onClick={() => dispatch(clearSearch())} className="text-[10px] text-slate-500 hover:text-slate-300">
+                                    Clear
+                                </button>
+                            )}
+                        </form>
+
+                        {/* System Vitals Indicators */}
+                        <div className="flex items-center gap-4 text-xs font-semibold">
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/5 rounded-full">
+                                <Icons.Wifi className={sysHealth.status !== 'offline' ? 'text-emerald-400' : 'text-rose-400'} />
+                                API: <span className={sysHealth.status !== 'offline' ? 'text-emerald-400' : 'text-rose-400'}>{sysHealth.status}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/5 rounded-full">
+                                <Icons.Database className={sysHealth.postgres === 'healthy' || sysHealth.postgres === 'simulated' ? 'text-emerald-400' : 'text-rose-400'} />
+                                DB
+                            </div>
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/5 rounded-full">
+                                <Icons.Activity className={sysHealth.localstack === 'healthy' || sysHealth.localstack === 'simulated' ? 'text-emerald-400' : 'text-rose-400'} />
+                                Queue
+                            </div>
+                            <button onClick={checkHealth} className="flex items-center justify-center p-2 bg-white/5 border border-white/5 rounded-full hover:bg-white/10">
+                                <Icons.Refresh />
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Dashboard Workspace */}
+                    <div className="flex flex-1 overflow-hidden">
+                        
+                        {/* Left Pane: Machine List */}
+                        <aside className="w-[320px] flex flex-col border-r border-white/5 bg-slate-950/20">
+                            <div className="flex h-14 items-center justify-between px-5 border-b border-white/5">
+                                <h2 className="text-xs uppercase tracking-wider text-slate-400 font-bold">Monitored Machines</h2>
+                                <span className="flex items-center gap-1.5 px-2 py-0.5 bg-white/5 border border-white/5 rounded-full text-[10px]">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981] relative glow-pulse"></span>
+                                    Live Vitals
+                                </span>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                                {machines.map((m) => {
+                                    const rClass = getRiskClass(m.failure_probability);
+                                    const isActive = activeId === m.id;
+                                    return (
+                                        <div
+                                            key={m.id}
+                                            className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 flex flex-col gap-2 relative overflow-hidden ${
+                                                isActive 
+                                                    ? 'bg-indigo-500/10 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.08)]' 
+                                                    : 'bg-white/[0.02] border-transparent hover:bg-white/[0.04]'
+                                            }`}
+                                            onClick={() => dispatch(setActiveMachineId(m.id))}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={rClass === 'danger' ? 'text-rose-400' : rClass === 'warning' ? 'text-amber-400' : 'text-emerald-400'}>
+                                                        <Icons.Cpu />
+                                                    </span>
+                                                    <span className="font-semibold text-sm">{m.name}</span>
+                                                </div>
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                                    rClass === 'danger' ? 'bg-rose-500/10 text-rose-400 animate-pulse' :
+                                                    rClass === 'warning' ? 'bg-amber-500/10 text-amber-400' : 'bg-emerald-500/10 text-emerald-400'
+                                                }`}>
+                                                    {(m.failure_probability * 100).toFixed(0)}% Risk
+                                                </span>
+                                            </div>
+
+                                            <div className="flex justify-between text-[11px] text-slate-400">
+                                                <span>Temp: {m.temperature.toFixed(1)}°C</span>
+                                                <span>Vibr: {m.vibration.toFixed(1)}m/s²</span>
+                                                <span>Pres: {m.pressure.toFixed(0)} PSI</span>
+                                            </div>
+
+                                            <div className="flex justify-between items-center text-[10px] text-slate-500 mt-1.5 pt-1.5 border-t border-white/5">
+                                                <span>{m.predicted_failure_type || 'Healthy'}</span>
+                                                {m.open_work_orders > 0 && (
+                                                    <span className="text-sky-400 flex items-center gap-1 font-semibold">
+                                                        <Icons.Wrench className="w-3 h-3" /> Repair Scheduled
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </aside>
+
+                        {/* Center Pane: Detailed telemetry analytics & prescription */}
+                        <main className="flex-1 flex flex-col p-6 space-y-6 overflow-y-auto custom-scrollbar bg-slate-900/10">
+                            
+                            {/* Solr Incidents Overlay Panel */}
+                            {searchResults && (
+                                <div className="glass-card p-5 rounded-2xl border border-indigo-500/20 bg-indigo-950/20 backdrop-blur-md">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h3 className="font-heading font-bold text-base text-indigo-300">Historical Incidents Log (Solr Proxy)</h3>
+                                        <button onClick={() => dispatch(clearSearch())} className="bg-white/5 border border-white/5 hover:bg-white/10 text-xs px-3 py-1 rounded-lg">
+                                            Close Results
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mb-4">Found {searchResults.numFound} logs matching incident signature queries.</p>
+
+                                    <div className="space-y-3.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                                        {searchResults.docs.length === 0 ? (
+                                            <p className="text-xs text-slate-500">No search logs match this keyword.</p>
+                                        ) : (
+                                            searchResults.docs.map((doc, idx) => (
+                                                <div key={doc.id || idx} className="p-4 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col gap-2">
+                                                    <div className="flex justify-between text-xs font-semibold">
+                                                        <span>Machine-{String(doc.machine_id).padStart(3, '0')}</span>
+                                                        <span className="text-slate-400">{new Date(doc.date).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <p className="text-xs text-slate-300">
+                                                        <span className="text-rose-400 font-medium mr-1">Signature:</span>
+                                                        {doc.failure_signature}
+                                                    </p>
+                                                    <p className="text-xs text-slate-300">
+                                                        <span className="text-emerald-400 font-medium mr-1">Action:</span>
+                                                        {doc.action_taken}
+                                                    </p>
+                                                    <div className="text-[10px] text-slate-500">
+                                                        Status: <span className="text-emerald-400 font-semibold">{doc.outcome}</span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Top row: Telemetry Chart & Risk gauge */}
+                            <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+                                
+                                {/* Gauge Card */}
+                                <div className="xl:col-span-2 glass-card p-5 rounded-2xl flex flex-col items-center justify-center text-center">
+                                    <h3 className="text-xs uppercase tracking-wider text-slate-400 font-bold self-start mb-4">Risk Telemetry</h3>
+                                    
+                                    <div className="relative w-40 h-40 flex items-center justify-center mb-4">
+                                        <svg className="w-full h-full transform -rotate-90">
+                                            <circle cx="80" cy="80" r="70" className="fill-none stroke-white/[0.04]" strokeWidth="10" />
+                                            <circle
+                                                cx="80" cy="80" r="70"
+                                                className={`fill-none transition-all duration-700 ${
+                                                    currentRisk >= 0.7 ? 'stroke-rose-500' :
+                                                    currentRisk >= 0.3 ? 'stroke-amber-500' : 'stroke-emerald-500'
+                                                }`}
+                                                strokeWidth="10"
+                                                strokeLinecap="round"
+                                                strokeDasharray={`${strokeDash} 439.6`}
+                                            />
+                                        </svg>
+                                        <div className="absolute flex flex-col items-center">
+                                            <span className={`text-3xl font-extrabold font-heading ${
+                                                currentRisk >= 0.7 ? 'text-rose-400' :
+                                                currentRisk >= 0.3 ? 'text-amber-400' : 'text-emerald-400'
+                                            }`}>
+                                                {(currentRisk * 100).toFixed(0)}%
+                                            </span>
+                                            <span className="text-[10px] tracking-wider uppercase text-slate-400 font-medium">Risk Index</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="font-heading font-bold text-base text-slate-100">{selectedMachine.predicted_failure_type || 'Healthy'}</h4>
+                                        {selectedMachine.time_to_failure_hours ? (
+                                            <p className="text-xs text-amber-400 flex items-center gap-1 mt-1 justify-center">
+                                                <Icons.Clock className="w-3.5 h-3.5" /> Est. Time-to-Failure: <strong>{selectedMachine.time_to_failure_hours} hours</strong>
+                                            </p>
+                                        ) : (
+                                            <p className="text-xs text-emerald-400 mt-1">Spindle alignment and temperatures nominal</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Graph Card */}
+                                <div className="xl:col-span-3 glass-card p-5 rounded-2xl flex flex-col gap-4">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-xs uppercase tracking-wider text-slate-400 font-bold">Live Sensor History</h3>
+                                        <div className="flex bg-white/5 border border-white/5 p-1 rounded-lg text-[10px] font-semibold">
+                                            <button className={`px-3 py-1 rounded-md transition-all ${activeTab === 'temperature' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`} onClick={() => setActiveTab('temperature')}>Temp</button>
+                                            <button className={`px-3 py-1 rounded-md transition-all ${activeTab === 'vibration' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`} onClick={() => setActiveTab('vibration')}>Vibr</button>
+                                            <button className={`px-3 py-1 rounded-md transition-all ${activeTab === 'pressure' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`} onClick={() => setActiveTab('pressure')}>Pres</button>
+                                        </div>
+                                    </div>
+
+                                    <div className="h-44 w-full relative">
+                                        {detailLoading ? (
+                                            <div className="flex h-full w-full items-center justify-center"><div className="w-6 h-6 border-2 border-white/10 border-t-indigo-500 rounded-full animate-spin"></div></div>
+                                        ) : detail && detail.sensor_history.length > 0 ? (
+                                            <svg viewBox="0 0 500 200" className="w-full h-full">
+                                                <defs>
+                                                    <linearGradient id="area-gradient" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25" />
+                                                        <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+                                                    </linearGradient>
+                                                </defs>
+
+                                                {/* Y Axis horizontal grids */}
+                                                {[40, 80, 120, 160].map((y, idx) => (
+                                                    <line key={idx} x1="20" y1={y} x2="480" y2={y} stroke="rgba(255, 255, 255, 0.04)" strokeWidth="1" />
+                                                ))}
+
+                                                <path d={trendData.area} fill="url(#area-gradient)" />
+                                                <path d={trendData.path} fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+                                                {trendData.points.map((p, i) => (
+                                                    <circle
+                                                        key={i} cx={p.x} cy={p.y}
+                                                        r={activeTab === 'vibration' && detail.sensor_history[i][activeTab] > 5 ? 5 : 3.5}
+                                                        fill={activeTab === 'vibration' && detail.sensor_history[i][activeTab] > 5 ? '#f43f5e' : '#6366f1'}
+                                                        stroke="#070a13" strokeWidth="1.5"
+                                                        className="hover:scale-125 transition-transform cursor-pointer"
+                                                    />
+                                                ))}
+
+                                                <text x="20" y="195" fill="#64748b" fontSize="9">Time →</text>
+                                                <text x="480" y="15" fill="#64748b" fontSize="9" textAnchor="end">
+                                                    Max: {trendData.maxVal ? trendData.maxVal.toFixed(1) : ''}
+                                                </text>
+                                            </svg>
+                                        ) : (
+                                            <div className="flex h-full w-full items-center justify-center text-slate-500 text-xs">No historical data logs recorded.</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Recommendations Action Panel */}
+                            <div className="glass-card p-5 rounded-2xl flex flex-col gap-4">
+                                {recLoading ? (
+                                    <div className="flex h-12 w-full items-center justify-center"><div className="w-6 h-6 border-2 border-white/10 border-t-indigo-500 rounded-full animate-spin"></div></div>
+                                ) : rec && rec.has_recommendation ? (
+                                    <>
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <h3 className="font-heading font-bold text-lg text-slate-100 flex items-center gap-2">
+                                                    <span className="text-indigo-400"><Icons.Wrench /></span>
+                                                    Prescriptive Remediation Action Plan
+                                                </h3>
+                                                <p className="text-[10px] text-slate-500 mt-1">Generated: {new Date(rec.created_at).toLocaleString()}</p>
+                                            </div>
+                                            <span className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold capitalize ${
+                                                rec.priority === 'critical' ? 'bg-rose-500/10 text-rose-400' :
+                                                rec.priority === 'high' ? 'bg-amber-500/10 text-amber-400' :
+                                                rec.priority === 'medium' ? 'bg-sky-500/10 text-sky-400' : 'bg-emerald-500/10 text-emerald-400'
+                                            }`}>
+                                                <Icons.AlertTriangle className="w-3.5 h-3.5" />
+                                                {rec.priority} Priority
+                                            </span>
+                                        </div>
+
+                                        <div className="p-4 rounded-xl bg-white/[0.01] border border-white/5">
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mitigation Steps</span>
+                                            <p className="text-xs text-slate-200 mt-1 leading-relaxed">{rec.recommended_action}</p>
+                                        </div>
+
+                                        <div>
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">Required Spare Parts</span>
+                                            {rec.parts_status.length === 0 ? (
+                                                <p className="text-xs text-slate-400">No parts requirements required for maintenance execution.</p>
+                                            ) : (
+                                                <table className="w-full text-xs text-left">
+                                                    <thead>
+                                                        <tr className="text-[10px] uppercase text-slate-500 tracking-wider border-b border-white/5">
+                                                            <th className="py-2.5 font-medium">Part Name</th>
+                                                            <th className="py-2.5 font-medium">Qty Required</th>
+                                                            <th className="py-2.5 font-medium">In-Stock Qty</th>
+                                                            <th className="py-2.5 font-medium">Status</th>
+                                                            <th className="py-2.5 font-medium text-right">Cost</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-white/5">
+                                                        {rec.parts_status.map((p, idx) => (
+                                                            <tr key={idx}>
+                                                                <td className="py-3 font-medium">{p.part_name}</td>
+                                                                <td className="py-3">{p.quantity_required}</td>
+                                                                <td className="py-3">{p.stock_available}</td>
+                                                                <td className="py-3">
+                                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold capitalize ${
+                                                                        p.status === 'instock' ? 'bg-emerald-500/10 text-emerald-400' :
+                                                                        p.status === 'lowstock' ? 'bg-amber-500/10 text-amber-400' :
+                                                                        p.status === 'outofstock' ? 'bg-rose-500/10 text-rose-400' : 'bg-white/5 text-slate-400'
+                                                                    }`}>
+                                                                        {p.status}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="py-3 text-right text-slate-400">${p.unit_cost.toFixed(2)}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            )}
+                                        </div>
+
+                                        <div className="flex items-center justify-between border-t border-white/5 pt-4 mt-2">
+                                            <span className="text-xs text-slate-400">
+                                                Est. Repair Duration: <strong className="text-slate-100">{rec.estimated_duration_hours} hours</strong>
+                                            </span>
+
+                                            <div className="flex flex-col items-end gap-1.5">
+                                                {rec.parts_missing && (
+                                                    <span className="text-[10px] text-rose-400 flex items-center gap-1 font-semibold">
+                                                        <Icons.AlertTriangle className="w-3.5 h-3.5" /> Insufficient warehouse inventory levels.
+                                                    </span>
+                                                )}
+                                                <button
+                                                    onClick={handleCreateWorkOrder}
+                                                    disabled={submittingWorkOrder}
+                                                    className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:cursor-not-allowed font-semibold text-xs rounded-xl shadow-lg shadow-indigo-600/20 active:translate-y-[1px] transition-all"
+                                                >
+                                                    <Icons.CheckCircle className="w-4 h-4" />
+                                                    {submittingWorkOrder ? 'Scheduling Maintenance...' : 'Authorize Corrective Work Order'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center text-center py-10">
+                                        <span className="text-emerald-400 mb-3"><Icons.CheckCircle className="w-8 h-8" /></span>
+                                        <h3 className="font-heading font-bold text-base">All Mechanical Vitals Nominal</h3>
+                                        <p className="text-xs text-slate-400 mt-1">Vibration, pressure, and thermal values are within safe calibration boundaries.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </main>
+
+                        {/* Right Pane: Alerts Log Feed */}
+                        <aside className="w-[340px] flex flex-col border-l border-white/5 bg-slate-950/20">
+                            <div className="flex h-14 items-center justify-between px-5 border-b border-white/5">
+                                <h2 className="text-xs uppercase tracking-wider text-slate-400 font-bold">SNS Event Alerts Feed</h2>
+                                <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg text-[10px] font-bold">
+                                    Subscribed
+                                </span>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 custom-scrollbar">
+                                {alerts.length === 0 ? (
+                                    <p className="text-xs text-slate-500 text-center py-10">No alerts broadcasted from LocalStack queue.</p>
+                                ) : (
+                                    alerts.map((a) => {
+                                        const isCrit = a.subject && a.subject.includes('CRITICAL');
+                                        const isHigh = a.subject && a.subject.includes('HIGH');
+                                        return (
+                                            <div
+                                                key={a.id}
+                                                className={`p-4 rounded-xl bg-white/[0.02] border-l-[3px] flex gap-3 transition-all ${
+                                                    isCrit ? 'border-l-rose-500 bg-rose-500/[0.01]' :
+                                                    isHigh ? 'border-l-amber-500 bg-amber-500/[0.01]' : 'border-l-sky-500 bg-sky-500/[0.01]'
+                                                }`}
+                                            >
+                                                <div className="mt-0.5">
+                                                    {isCrit ? <Icons.XCircle className="text-rose-500" /> :
+                                                     isHigh ? <Icons.AlertTriangle className="text-amber-500" /> :
+                                                     <Icons.Activity className="text-sky-500" />}
+                                                </div>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <span className="text-xs font-semibold leading-tight">{a.subject}</span>
+                                                    <p className="text-[11px] text-slate-400 leading-normal">{a.message}</p>
+                                                    <span className="text-[9px] text-slate-500 mt-1">{new Date(a.received_at).toLocaleTimeString()}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </aside>
+
+                    </div>
+                </div>
+            );
+        }
+
+        // Render App
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(
+            <Provider store={store}>
+                <Dashboard />
+            </Provider>
+        );
+    </script>
 </body>
 </html>

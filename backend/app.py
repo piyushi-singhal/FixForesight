@@ -1,61 +1,14 @@
-import os
+import http.server
 import json
-import logging
-import requests
-import psycopg2
-from psycopg2.extras import RealDictCursor
-from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional
+import urllib.parse
+import os
 from datetime import datetime, timedelta
+import random
 
-# Logging setup
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("backend")
+PORT = 8000
 
-app = FastAPI(title="FixForesight Backend API", version="1.0.0")
-
-# Enable CORS for frontend interactions
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Configuration from environment variables
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/pdm_db")
-AWS_ENDPOINT_URL = os.getenv("AWS_ENDPOINT_URL", "http://localhost:4566")
-SOLR_URL = os.getenv("SOLR_URL", "http://localhost:8983/solr/incidents")
-
-# Detection of mock mode
-MOCK_MODE = False
-try:
-    logger.info("Testing database connection to determine environment...")
-    conn = psycopg2.connect(DATABASE_URL, connect_timeout=2)
-    conn.close()
-    logger.info("Successfully connected to Postgres database. Running in production/DB mode.")
-except Exception as e:
-    MOCK_MODE = True
-    logger.warning("----------------------------------------------------------------------")
-    logger.warning("DATABASE CONNECTION FAILED: " + str(e))
-    logger.warning("AUTOMATIC FALLBACK TO IN-MEMORY MOCK MODE ACTIVATED!")
-    logger.warning("All data, Solr search, and SNS integrations will be simulated in-memory.")
-    logger.warning("----------------------------------------------------------------------")
-
-# Models for Request Bodies
-class WorkOrderCreate(BaseModel):
-    machine_id: int
-    priority: str
-    action_required: str
-
-class WorkOrderStatusUpdate(BaseModel):
-    status: str
-
-# ----------------- In-Memory Mock Store -----------------
-class MockStore:
+# In-Memory Database Store simulating relational database tables
+class MockDB:
     def __init__(self):
         # 1. Parts Inventory
         self.parts_inventory = [
@@ -125,33 +78,28 @@ class MockStore:
             {"id": 5, "machine_id": 3, "status": "open", "priority": "critical", "action_required": "Perform emergency heat-exchanger cleanout and fan replacement.", "created_at": (datetime.now() - timedelta(hours=1)).isoformat(), "completed_at": None}
         ]
 
-        # 5. Sensor readings history (last 20 logs per machine)
+        # 5. Sensor History
         self.sensor_history = {}
         for m in range(1, 6):
             self.sensor_history[m] = []
-            # Seed 20 historical entries
             for i in range(20, 0, -1):
                 base_time = datetime.now() - timedelta(minutes=i*2)
                 if m == 1:
-                    # Vibration climbing
                     temp = 65.0 + (20 - i) * 0.4
                     vib = 3.0 + (20 - i) * 0.3
                     pres = 120.0 + (i % 3) * 0.2
                     err = "W-VIB-01" if i < 5 else None
                 elif m == 3:
-                    # Temperature climbing
                     temp = 80.0 + (20 - i) * 0.95
                     vib = 2.0 + (i % 2) * 0.05
                     pres = 100.0 - (20 - i) * 0.2
                     err = "E-TEMP-CRIT" if i < 4 else "W-TEMP-HIGH" if i < 10 else None
                 elif m == 4:
-                    # Pressure climbing
                     temp = 60.0 + (i % 2) * 0.2
                     vib = 2.0 + (i % 3) * 0.1
                     pres = 125.0 + (20 - i) * 0.7
                     err = "W-PRES-HIGH" if i < 6 else None
                 else:
-                    # Stable values
                     temp = 55.0 + (i % 4) * 0.1
                     vib = 1.2 + (i % 3) * 0.05
                     pres = 115.0 + (i % 5) * 0.15
@@ -171,581 +119,408 @@ class MockStore:
             {"id": 2, "message_id": "msg-923848", "subject": "HIGH Risk Alert: Machine 1", "message": "Machine 1 vibration velocity exceeded safe envelope (8.9 mm/s). High probability of bearing failure. Maintenance order created.", "received_at": (datetime.now() - timedelta(hours=4)).isoformat()}
         ]
 
-        # 7. Solr Historical Incidents cache
-        self.solr_incidents = []
-        try:
-            # Attempt to read incidents from file system
-            incidents_path = os.path.join(os.path.dirname(__file__), "..", "infra", "solr", "sample_incidents.json")
-            if os.path.exists(incidents_path):
-                with open(incidents_path, "r") as f:
-                    self.solr_incidents = json.load(f)
-                    logger.info(f"Loaded {len(self.solr_incidents)} historical incidents into Mock Solr Cache")
-        except Exception as e:
-            logger.error(f"Failed to load sample incidents json into mock: {e}")
-            # Fallback hardcoded incidents
-            self.solr_incidents = [
-                {"id": "inc-001", "machine_id": 1, "failure_signature": "Vibration levels spike, bearing failure", "action_taken": "Replaced rotary bearing B-10", "outcome": "Resolved", "date": "2026-03-15T08:00:00Z"},
-                {"id": "inc-002", "machine_id": 3, "failure_signature": "Overheating shutdown triggered", "action_taken": "Cleaned heat exchanger and replaced fan F-8", "outcome": "Resolved", "date": "2026-04-01T14:30:00Z"},
-                {"id": "inc-003", "machine_id": 4, "failure_signature": "Pressure valve leak detected", "action_taken": "Replaced pressure valve V-12", "outcome": "Resolved", "date": "2026-04-18T11:15:00Z"}
-            ]
+        # 7. Solr incidents
+        self.solr_incidents = [
+            {"id": "inc-001", "machine_id": 1, "failure_signature": "Vibration levels spike (bearing wear), high temperature near main drive spindle", "action_taken": "Replaced rotary bearing B-10 and adjusted rotor alignment", "outcome": "Resolved", "date": "2026-03-15T08:00:00Z"},
+            {"id": "inc-002", "machine_id": 3, "failure_signature": "Overheating shutdown triggered, core temperature reached 99.1°C", "action_taken": "Cleaned heat exchanger lines and replaced cooling fan F-8", "outcome": "Resolved", "date": "2026-04-01T14:30:00Z"},
+            {"id": "inc-003", "machine_id": 4, "failure_signature": "Pressure valve leak detected, line pressure fluctuated between 80-140 PSI", "action_taken": "Replaced pressure valve V-12 and high-temp gasket", "outcome": "Resolved", "date": "2026-04-18T11:15:00Z"},
+            {"id": "inc-004", "machine_id": 1, "failure_signature": "Rotor locking and screeching noise, motor pulling double current", "action_taken": "Complete bearing rebuild, replaced hydraulic pump seal", "outcome": "Resolved", "date": "2026-05-02T19:00:00Z"},
+            {"id": "inc-005", "machine_id": 5, "failure_signature": "Minor vibrations, belt slippage detected", "action_taken": "Tightened drive belt, greased secondary drive gear linkages", "outcome": "Resolved", "date": "2026-05-20T10:00:00Z"},
+            {"id": "inc-006", "machine_id": 3, "failure_signature": "Thermal overload sensor tripped due to radiator blockage", "action_taken": "Cleared intake vents, ran flush cycle on radiators", "outcome": "Resolved", "date": "2026-06-01T09:45:00Z"}
+        ]
 
-mock_db = MockStore()
+db = MockDB()
 
-# ----------------- DB / Core Endpoints -----------------
+class RouterHandler(http.server.BaseHTTPRequestHandler):
+    def end_headers(self):
+        # Universal CORS Header configuration
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        super().end_headers()
 
-def get_db_connection():
-    """Establishes a connection to the PostgreSQL database (Active DB Mode)."""
-    try:
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-        return conn
-    except Exception as e:
-        logger.error(f"Database connection failed: {e}")
-        raise HTTPException(status_code=500, detail="Database connection failed")
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.end_headers()
 
-@app.get("/health")
-def health_check():
-    """Verify health of internal components."""
-    if MOCK_MODE:
-        return {
-            "status": "healthy (MOCK MODE)",
-            "postgres": "simulated",
-            "localstack": "simulated",
-            "solr": "simulated",
-            "note": "Running in connection-free local mock mode."
-        }
+    def do_GET(self):
+        parsed_url = urllib.parse.urlparse(self.path)
+        path = parsed_url.path
+        query = urllib.parse.parse_qs(parsed_url.query)
 
-    status = {"status": "healthy", "postgres": "healthy", "localstack": "healthy", "solr": "healthy"}
-    
-    # 1. Test Postgres
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cur:
-            cur.execute("SELECT 1;")
-        conn.close()
-    except Exception:
-        status["postgres"] = "unhealthy"
-        status["status"] = "degraded"
-
-    # 2. Test LocalStack
-    try:
-        response = requests.get(f"{AWS_ENDPOINT_URL}/health", timeout=2)
-        if response.status_code != 200:
-            status["localstack"] = "unhealthy"
-            status["status"] = "degraded"
-    except Exception:
-        status["localstack"] = "unhealthy"
-        status["status"] = "degraded"
-
-    # 3. Test Solr
-    try:
-        response = requests.get(f"{SOLR_URL}/admin/ping", timeout=2)
-        if response.status_code != 200:
-            status["solr"] = "unhealthy"
-            status["status"] = "degraded"
-    except Exception:
-        status["solr"] = "unhealthy"
-        status["status"] = "degraded"
-
-    return status
-
-@app.get("/machines")
-def get_machines():
-    """Retrieve overview metrics for all 5 simulated machines."""
-    if MOCK_MODE:
-        machines_summary = []
-        for i in range(1, 6):
-            pred = mock_db.predictions.get(i, {"failure_probability": 0.05, "predicted_failure_type": "Normal Operation", "time_to_failure_hours": None})
-            history = mock_db.sensor_history.get(i, [])
-            last_sensor = history[-1] if history else {"temperature": 50.0, "vibration": 1.0, "pressure": 100.0, "error_code": None}
+        # 1. Serve React Frontend dashboard at "/"
+        if path == "/" or path == "/index.html":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
             
-            # Count open orders in mock database
-            open_orders = sum(1 for w in mock_db.work_orders if w["machine_id"] == i and w["status"] in ["open", "in_progress"])
-            
-            # Simulate a small dynamic fluctuate in values to make dashboard live
-            import random
-            temp_fluc = last_sensor["temperature"] + random.uniform(-0.5, 0.5)
-            vib_fluc = last_sensor["vibration"] + random.uniform(-0.1, 0.1)
-            pres_fluc = last_sensor["pressure"] + random.uniform(-1.0, 1.0)
-            
-            # Update history with dynamic fluctuations
-            last_sensor["temperature"] = max(30.0, min(150.0, temp_fluc))
-            last_sensor["vibration"] = max(0.1, min(20.0, vib_fluc))
-            last_sensor["pressure"] = max(50.0, min(250.0, pres_fluc))
+            # Read index.html from workspace
+            index_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "public", "index.html")
+            if os.path.exists(index_path):
+                with open(index_path, "r", encoding="utf-8") as f:
+                    self.wfile.write(f.read().encode("utf-8"))
+            else:
+                self.wfile.write(b"<h1>FixForesight Front-end File Not Found. Ensure frontend/public/index.html is created.</h1>")
+            return
 
-            # Simulate spontaneous alerts triggers if temperature or vibration climbs too high
-            if i == 1 and last_sensor["vibration"] > 10.0:
-                mock_db.predictions[1]["failure_probability"] = 0.95
-                mock_db.predictions[1]["time_to_failure_hours"] = 8
-            if i == 3 and last_sensor["temperature"] > 100.0:
-                mock_db.predictions[3]["failure_probability"] = 0.99
-                mock_db.predictions[3]["time_to_failure_hours"] = 2
+        # 2. Endpoint: GET /health
+        elif path == "/health":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            resp = {
+                "status": "healthy (In-Memory Fallback)",
+                "postgres": "simulated",
+                "localstack": "simulated",
+                "solr": "simulated",
+                "note": "API is running without container dependencies."
+            }
+            self.wfile.write(json.dumps(resp).encode("utf-8"))
+            return
 
-            machines_summary.append({
-                "id": i,
-                "name": f"Machine-{i:03d}",
-                "failure_probability": pred["failure_probability"],
-                "predicted_failure_type": pred["predicted_failure_type"],
-                "time_to_failure_hours": pred["time_to_failure_hours"],
-                "temperature": last_sensor["temperature"],
-                "vibration": last_sensor["vibration"],
-                "pressure": last_sensor["pressure"],
-                "active_error": last_sensor["error_code"],
-                "open_work_orders": open_orders
-            })
-        return machines_summary
+        # 3. Endpoint: GET /machines
+        elif path == "/machines":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
 
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT DISTINCT ON (machine_id) machine_id, failure_probability, predicted_failure_type, time_to_failure_hours, timestamp
-                FROM predictions
-                ORDER BY machine_id, timestamp DESC;
-            """)
-            predictions = {p["machine_id"]: p for p in cur.fetchall()}
+            machines_summary = []
+            for i in range(1, 6):
+                pred = db.predictions.get(i, {"failure_probability": 0.05, "predicted_failure_type": "Normal Operation", "time_to_failure_hours": None})
+                history = db.sensor_history.get(i, [])
+                
+                # Fluctuate readings dynamically to simulate stream
+                last_sensor = history[-1] if history else {"temperature": 50.0, "vibration": 1.0, "pressure": 100.0, "error_code": None}
+                temp_fluc = last_sensor["temperature"] + random.uniform(-0.4, 0.4)
+                vib_fluc = last_sensor["vibration"] + random.uniform(-0.08, 0.08)
+                pres_fluc = last_sensor["pressure"] + random.uniform(-0.5, 0.5)
 
-            cur.execute("""
-                SELECT machine_id, COUNT(*) as open_orders 
-                FROM work_orders 
-                WHERE status IN ('open', 'in_progress') 
-                GROUP BY machine_id;
-            """)
-            work_orders = {w["machine_id"]: w["open_orders"] for w in cur.fetchall()}
+                last_sensor["temperature"] = max(30.0, min(140.0, temp_fluc))
+                last_sensor["vibration"] = max(0.1, min(25.0, vib_fluc))
+                last_sensor["pressure"] = max(50.0, min(250.0, pres_fluc))
 
-            cur.execute("""
-                SELECT DISTINCT ON (machine_id) machine_id, temperature, vibration, pressure, error_code
-                FROM sensor_readings
-                ORDER BY machine_id, timestamp DESC;
-            """)
-            sensors = {s["machine_id"]: s for s in cur.fetchall()}
+                open_orders = sum(1 for w in db.work_orders if w["machine_id"] == i and w["status"] in ["open", "in_progress"])
 
-        machines_summary = []
-        for i in range(1, 6):
-            pred = predictions.get(i, {"failure_probability": 0.0, "predicted_failure_type": "Healthy", "time_to_failure_hours": None})
-            sens = sensors.get(i, {"temperature": 50.0, "vibration": 1.0, "pressure": 100.0, "error_code": None})
-            
-            machines_summary.append({
-                "id": i,
-                "name": f"Machine-{i:03d}",
-                "failure_probability": pred["failure_probability"],
-                "predicted_failure_type": pred["predicted_failure_type"],
-                "time_to_failure_hours": pred["time_to_failure_hours"],
-                "temperature": sens["temperature"],
-                "vibration": sens["vibration"],
-                "pressure": sens["pressure"],
-                "active_error": sens["error_code"],
-                "open_work_orders": work_orders.get(i, 0)
-            })
-        return machines_summary
-    finally:
-        conn.close()
+                machines_summary.append({
+                    "id": i,
+                    "name": f"Machine-{i:03d}",
+                    "failure_probability": pred["failure_probability"],
+                    "predicted_failure_type": pred["predicted_failure_type"],
+                    "time_to_failure_hours": pred["time_to_failure_hours"],
+                    "temperature": last_sensor["temperature"],
+                    "vibration": last_sensor["vibration"],
+                    "pressure": last_sensor["pressure"],
+                    "active_error": last_sensor["error_code"],
+                    "open_work_orders": open_orders
+                })
+            self.wfile.write(json.dumps(machines_summary).encode("utf-8"))
+            return
 
-@app.get("/machines/{id}/risk")
-def get_machine_risk(id: int):
-    """Retrieve detailed failure prediction and historic sensor trend for a machine."""
-    if MOCK_MODE:
-        if id < 1 or id > 5:
-            raise HTTPException(status_code=404, detail="Machine not found")
-        pred = mock_db.predictions.get(id, {
-            "failure_probability": 0.05,
-            "predicted_failure_type": "Normal Operation",
-            "time_to_failure_hours": None,
-            "timestamp": datetime.now().isoformat()
-        })
-        history = mock_db.sensor_history.get(id, [])
-        return {
-            "machine_id": id,
-            "prediction": pred,
-            "sensor_history": history
-        }
+        # 4. Endpoint: GET /machines/{id}/risk
+        elif path.startswith("/machines/") and path.endswith("/risk"):
+            try:
+                parts = path.split("/")
+                m_id = int(parts[2])
+            except ValueError:
+                self.send_response(400)
+                self.end_headers()
+                return
 
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT failure_probability, predicted_failure_type, time_to_failure_hours, timestamp
-                FROM predictions
-                WHERE machine_id = %s
-                ORDER BY timestamp DESC LIMIT 1;
-            """, (id,))
-            prediction = cur.fetchone()
+            if m_id < 1 or m_id > 5:
+                self.send_response(404)
+                self.end_headers()
+                return
 
-            cur.execute("""
-                SELECT temperature, vibration, pressure, error_code, timestamp
-                FROM sensor_readings
-                WHERE machine_id = %s
-                ORDER BY timestamp DESC LIMIT 20;
-            """, (id,))
-            readings = cur.fetchall()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
 
-        if not prediction:
-            prediction = {
+            pred = db.predictions.get(m_id, {
                 "failure_probability": 0.05,
                 "predicted_failure_type": "Normal Operation",
                 "time_to_failure_hours": None,
-                "timestamp": None
+                "timestamp": datetime.now().isoformat()
+            })
+            history = db.sensor_history.get(m_id, [])
+
+            # Keep length capped at 20
+            if len(history) > 20:
+                history = history[-20:]
+
+            resp = {
+                "machine_id": m_id,
+                "prediction": pred,
+                "sensor_history": history
             }
+            self.wfile.write(json.dumps(resp).encode("utf-8"))
+            return
 
-        return {
-            "machine_id": id,
-            "prediction": prediction,
-            "sensor_history": list(reversed(readings))
-        }
-    finally:
-        conn.close()
+        # 5. Endpoint: GET /machines/{id}/recommendations
+        elif path.startswith("/machines/") and path.endswith("/recommendations"):
+            try:
+                parts = path.split("/")
+                m_id = int(parts[2])
+            except ValueError:
+                self.send_response(400)
+                self.end_headers()
+                return
 
-@app.get("/machines/{id}/recommendations")
-def get_machine_recommendations(id: int):
-    """Retrieve repair recommendations, checking active inventory stock levels."""
-    if MOCK_MODE:
-        rec = mock_db.recommendations.get(id)
-        if not rec:
-            return {
-                "machine_id": id,
-                "has_recommendation": False,
-                "message": "No active recommendations. Machine operation normal."
-            }
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
 
-        inventory_map = {item["part_name"]: item for item in mock_db.parts_inventory}
-        parts_list = []
-        out_of_stock = False
+            rec = db.recommendations.get(m_id)
+            if not rec:
+                self.wfile.write(json.dumps({
+                    "machine_id": m_id,
+                    "has_recommendation": False,
+                    "message": "No active recommendations. Machine operation normal."
+                }).encode("utf-8"))
+                return
 
-        for part in rec["required_parts"]:
-            name = part["part_name"]
-            req_qty = part["quantity"]
-            inv = inventory_map.get(name)
+            inventory_map = {item["part_name"]: item for item in db.parts_inventory}
+            parts_list = []
+            out_of_stock = False
 
-            if not inv:
-                parts_list.append({
-                    "part_name": name,
-                    "quantity_required": req_qty,
-                    "stock_available": 0,
-                    "status": "unavailable",
-                    "unit_cost": 0.0
-                })
-                out_of_stock = True
-            else:
-                avail = inv["quantity"]
-                min_req = inv["min_required"]
-                cost = inv["unit_cost"]
-                
-                if avail >= req_qty:
-                    status = "instock" if avail >= min_req else "lowstock"
-                else:
-                    status = "outofstock"
-                    out_of_stock = True
-
-                parts_list.append({
-                    "part_name": name,
-                    "quantity_required": req_qty,
-                    "stock_available": avail,
-                    "status": status,
-                    "unit_cost": cost
-                })
-
-        return {
-            "machine_id": id,
-            "has_recommendation": True,
-            "recommendation_id": rec["id"],
-            "recommended_action": rec["recommended_action"],
-            "priority": rec["maintenance_priority"],
-            "estimated_duration_hours": rec["estimated_duration_hours"],
-            "parts_status": parts_list,
-            "parts_missing": out_of_stock,
-            "created_at": rec["created_at"]
-        }
-
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT id, recommended_action, required_parts, maintenance_priority, estimated_duration_hours, created_at
-                FROM recommendations
-                WHERE machine_id = %s
-                ORDER BY created_at DESC LIMIT 1;
-            """, (id,))
-            rec = cur.fetchone()
-
-            cur.execute("SELECT part_name, quantity, min_required, unit_cost FROM parts_inventory;")
-            inventory = {item["part_name"]: item for item in cur.fetchall()}
-
-        if not rec:
-            return {
-                "machine_id": id,
-                "has_recommendation": False,
-                "message": "No active recommendations. Machine operation normal."
-            }
-
-        required_parts = rec["required_parts"]
-        parts_list = []
-        out_of_stock = False
-
-        for part in required_parts:
-            name = part["part_name"]
-            req_qty = part["quantity"]
-            inv = inventory.get(name)
-
-            if not inv:
-                parts_list.append({
-                    "part_name": name,
-                    "quantity_required": req_qty,
-                    "stock_available": 0,
-                    "status": "unavailable",
-                    "unit_cost": 0.0
-                })
-                out_of_stock = True
-            else:
-                avail = inv["quantity"]
-                min_req = inv["min_required"]
-                cost = inv["unit_cost"]
-                
-                if avail >= req_qty:
-                    status = "instock" if avail >= min_req else "lowstock"
-                else:
-                    status = "outofstock"
-                    out_of_stock = True
-
-                parts_list.append({
-                    "part_name": name,
-                    "quantity_required": req_qty,
-                    "stock_available": avail,
-                    "status": status,
-                    "unit_cost": cost
-                })
-
-        return {
-            "machine_id": id,
-            "has_recommendation": True,
-            "recommendation_id": rec["id"],
-            "recommended_action": rec["recommended_action"],
-            "priority": rec["maintenance_priority"],
-            "estimated_duration_hours": rec["estimated_duration_hours"],
-            "parts_status": parts_list,
-            "parts_missing": out_of_stock,
-            "created_at": rec["created_at"]
-        }
-    finally:
-        conn.close()
-
-@app.get("/alerts")
-def get_alerts():
-    """Retrieve list of received failure and maintenance alerts."""
-    if MOCK_MODE:
-        # Return newest first
-        return sorted(mock_db.alerts, key=lambda x: x["received_at"], reverse=True)
-
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT id, message_id, subject, message, received_at FROM alerts ORDER BY received_at DESC LIMIT 50;")
-            return cur.fetchall()
-    finally:
-        conn.close()
-
-@app.post("/alerts/webhook")
-async def receive_sns_webhook(request: Request, background_tasks: BackgroundTasks):
-    """Webhook designed to catch, confirm, and store SNS notifications from LocalStack."""
-    body_bytes = await request.body()
-    body_str = body_bytes.decode("utf-8")
-    
-    logger.info(f"SNS Webhook received: {body_str}")
-    
-    try:
-        payload = json.loads(body_str)
-    except Exception as e:
-        logger.error(f"Failed to parse SNS JSON payload: {e}")
-        raise HTTPException(status_code=400, detail="Invalid JSON")
-
-    msg_type = request.headers.get("x-amz-sns-message-type") or payload.get("Type")
-    
-    if msg_type == "SubscriptionConfirmation":
-        subscribe_url = payload.get("SubscribeURL")
-        if subscribe_url:
-            logger.info(f"Confirming SNS subscription via URL: {subscribe_url}")
-            if not MOCK_MODE:
-                requests.get(subscribe_url)
-            return {"status": "subscription_confirmed"}
-        raise HTTPException(status_code=400, detail="Missing SubscribeURL")
-
-    elif msg_type == "Notification":
-        msg_id = payload.get("MessageId")
-        topic_arn = payload.get("TopicArn")
-        subject = payload.get("Subject", "Alert")
-        message = payload.get("Message", "")
-
-        if MOCK_MODE:
-            new_alert = {
-                "id": len(mock_db.alerts) + 1,
-                "message_id": msg_id,
-                "subject": subject,
-                "message": message,
-                "received_at": datetime.now().isoformat()
-            }
-            mock_db.alerts.append(new_alert)
-            return {"status": "alert_saved_mock"}
-
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "INSERT INTO alerts (message_id, topic_arn, subject, message) VALUES (%s, %s, %s, %s);",
-                    (msg_id, topic_arn, subject, message)
-                )
-                conn.commit()
-            return {"status": "alert_saved"}
-        except Exception as e:
-            logger.error(f"Failed to save alert: {e}")
-            raise HTTPException(status_code=500, detail="Database save failed")
-        finally:
-            conn.close()
-
-    else:
-        # Backup POST support
-        subject = payload.get("subject", "System Alert")
-        message = payload.get("message", body_str)
-        if MOCK_MODE:
-            new_alert = {
-                "id": len(mock_db.alerts) + 1,
-                "message_id": "raw-post",
-                "subject": subject,
-                "message": message,
-                "received_at": datetime.now().isoformat()
-            }
-            mock_db.alerts.append(new_alert)
-            return {"status": "raw_alert_saved_mock"}
-
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "INSERT INTO alerts (message_id, topic_arn, subject, message) VALUES (%s, %s, %s, %s);",
-                    ("raw-post", "arn:aws:sns:local", subject, message)
-                )
-                conn.commit()
-            return {"status": "raw_alert_saved"}
-        finally:
-            conn.close()
-
-@app.get("/incidents/search")
-def search_historical_incidents(q: str = "*:*"):
-    """Query Apache Solr core for historical incident logs."""
-    if MOCK_MODE:
-        # Simulate Solr filtering: simple word matches in incidents fields
-        results = []
-        query_clean = q.lower().strip()
-        
-        if query_clean == "*:*" or not query_clean:
-            results = mock_db.solr_incidents
-        else:
-            for doc in mock_db.solr_incidents:
-                # Search across failure_signature, action_taken, outcome
-                text_pool = f"{doc.get('failure_signature', '')} {doc.get('action_taken', '')} {doc.get('outcome', '')} machine-{doc.get('machine_id', '')}".lower()
-                if query_clean in text_pool:
-                    results.append(doc)
-                    
-        return {
-            "numFound": len(results),
-            "docs": results
-        }
-
-    try:
-        solr_endpoint = f"{SOLR_URL}/select"
-        params = {"q": q, "wt": "json", "rows": 20}
-        response = requests.get(solr_endpoint, params=params, timeout=5)
-        if response.status_code != 200:
-            return {"numFound": 0, "docs": []}
-
-        data = response.json()
-        resp_data = data.get("response", {})
-        return {
-            "numFound": resp_data.get("numFound", 0),
-            "docs": resp_data.get("docs", [])
-        }
-    except Exception as e:
-        logger.error(f"Solr connection failed: {e}")
-        return {"numFound": 0, "docs": [], "error": "Search service unavailable"}
-
-@app.post("/work-orders")
-def create_work_order(wo: WorkOrderCreate):
-    """Expose endpoint to generate new work orders from recommendations."""
-    if MOCK_MODE:
-        new_id = len(mock_db.work_orders) + 1
-        new_wo = {
-            "id": new_id,
-            "machine_id": wo.machine_id,
-            "status": "open",
-            "priority": wo.priority,
-            "action_required": wo.action_required,
-            "created_at": datetime.now().isoformat(),
-            "completed_at": None
-        }
-        mock_db.work_orders.append(new_wo)
-        
-        # Adjust in-memory parts inventory (deduct recommended parts)
-        rec = mock_db.recommendations.get(wo.machine_id)
-        if rec:
             for part in rec["required_parts"]:
                 name = part["part_name"]
-                qty = part["quantity"]
-                for inv_item in mock_db.parts_inventory:
-                    if inv_item["part_name"] == name:
-                        inv_item["quantity"] = max(0, inv_item["quantity"] - qty)
+                req_qty = part["quantity"]
+                inv = inventory_map.get(name)
 
-            # Mark prediction/recommendation as completed (reduce probability back to healthy state)
-            mock_db.predictions[wo.machine_id]["failure_probability"] = 0.05
-            mock_db.predictions[wo.machine_id]["predicted_failure_type"] = "Normal Operation"
-            mock_db.predictions[wo.machine_id]["time_to_failure_hours"] = None
-            # Remove recommendation since it has been actioned
-            mock_db.recommendations.pop(wo.machine_id, None)
+                if not inv:
+                    parts_list.append({
+                        "part_name": name,
+                        "quantity_required": req_qty,
+                        "stock_available": 0,
+                        "status": "unavailable",
+                        "unit_cost": 0.0
+                    })
+                    out_of_stock = True
+                else:
+                    avail = inv["quantity"]
+                    min_req = inv["min_required"]
+                    cost = inv["unit_cost"]
+                    
+                    if avail >= req_qty:
+                        status = "instock" if avail >= min_req else "lowstock"
+                    else:
+                        status = "outofstock"
+                        out_of_stock = True
 
-        return {"status": "created", "work_order_id": new_id}
+                    parts_list.append({
+                        "part_name": name,
+                        "quantity_required": req_qty,
+                        "stock_available": avail,
+                        "status": status,
+                        "unit_cost": cost
+                    })
 
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO work_orders (machine_id, status, priority, action_required)
-                VALUES (%s, 'open', %s, %s) RETURNING id;
-            """, (wo.machine_id, wo.priority, wo.action_required))
-            wo_id = cur.fetchone()["id"]
-            conn.commit()
-        return {"status": "created", "work_order_id": wo_id}
-    finally:
-        conn.close()
+            resp = {
+                "machine_id": m_id,
+                "has_recommendation": True,
+                "recommendation_id": rec["id"],
+                "recommended_action": rec["recommended_action"],
+                "priority": rec["maintenance_priority"],
+                "estimated_duration_hours": rec["estimated_duration_hours"],
+                "parts_status": parts_list,
+                "parts_missing": out_of_stock,
+                "created_at": rec["created_at"]
+            }
+            self.wfile.write(json.dumps(resp).encode("utf-8"))
+            return
 
-@app.put("/work-orders/{id}")
-def update_work_order_status(id: int, status_update: WorkOrderStatusUpdate):
-    """Update status of work orders."""
-    if MOCK_MODE:
-        for wo in mock_db.work_orders:
-            if wo["id"] == id:
-                wo["status"] = status_update.status
-                if status_update.status == "completed":
-                    wo["completed_at"] = datetime.now().isoformat()
-                return {"status": "updated_mock"}
-        raise HTTPException(status_code=404, detail="Work order not found")
+        # 6. Endpoint: GET /alerts
+        elif path == "/alerts":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            # Sort newest first
+            sorted_alerts = sorted(db.alerts, key=lambda x: x["received_at"], reverse=True)
+            self.wfile.write(json.dumps(sorted_alerts).encode("utf-8"))
+            return
 
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            if status_update.status == "completed":
-                cur.execute("""
-                    UPDATE work_orders 
-                    SET status = %s, completed_at = CURRENT_TIMESTAMP 
-                    WHERE id = %s;
-                """, (status_update.status, id))
+        # 7. Endpoint: GET /incidents/search
+        elif path == "/incidents/search":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+
+            q = query.get("q", ["*:*"])[0]
+            query_clean = q.lower().strip()
+            
+            results = []
+            if query_clean == "*:*" or not query_clean:
+                results = db.solr_incidents
             else:
-                cur.execute("""
-                    UPDATE work_orders 
-                    SET status = %s 
-                    WHERE id = %s;
-                """, (status_update.status, id))
-            conn.commit()
-        return {"status": "updated"}
-    finally:
-        conn.close()
+                for doc in db.solr_incidents:
+                    text_pool = f"{doc.get('failure_signature', '')} {doc.get('action_taken', '')} {doc.get('outcome', '')} machine-{doc.get('machine_id', '')}".lower()
+                    if query_clean in text_pool:
+                        results.append(doc)
+            
+            resp = {
+                "numFound": len(results),
+                "docs": results
+            }
+            self.wfile.write(json.dumps(resp).encode("utf-8"))
+            return
+
+        else:
+            self.send_response(404)
+            self.end_headers()
+            return
+
+    def do_POST(self):
+        parsed_url = urllib.parse.urlparse(self.path)
+        path = parsed_url.path
+
+        # Read JSON body
+        content_length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(content_length).decode('utf-8')
+        try:
+            payload = json.loads(body) if body else {}
+        except Exception:
+            self.send_response(400)
+            self.end_headers()
+            self.wfile.write(b"Invalid JSON")
+            return
+
+        # 1. Endpoint: POST /alerts/webhook (SNS endpoint)
+        if path == "/alerts/webhook":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+
+            # Inspect headers or payload for SNS Type
+            msg_type = self.headers.get("x-amz-sns-message-type") or payload.get("Type")
+            
+            if msg_type == "SubscriptionConfirmation":
+                subscribe_url = payload.get("SubscribeURL")
+                print(f"SNS Subscription Confirmation URL: {subscribe_url}")
+                self.wfile.write(json.dumps({"status": "subscription_confirmed"}).encode("utf-8"))
+                return
+            
+            else:
+                # Store message
+                subject = payload.get("Subject", "Alert")
+                message = payload.get("Message", body)
+                new_alert = {
+                    "id": len(db.alerts) + 1,
+                    "message_id": payload.get("MessageId", "raw-post"),
+                    "subject": subject,
+                    "message": message,
+                    "received_at": datetime.now().isoformat()
+                }
+                db.alerts.append(new_alert)
+                self.wfile.write(json.dumps({"status": "alert_saved_mock"}).encode("utf-8"))
+                return
+
+        # 2. Endpoint: POST /work-orders
+        elif path == "/work-orders":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+
+            m_id = payload.get("machine_id")
+            priority = payload.get("priority")
+            action = payload.get("action_required")
+
+            new_id = len(db.work_orders) + 1
+            new_wo = {
+                "id": new_id,
+                "machine_id": m_id,
+                "status": "open",
+                "priority": priority,
+                "action_required": action,
+                "created_at": datetime.now().isoformat(),
+                "completed_at": None
+            }
+            db.work_orders.append(new_wo)
+
+            # Deduct inventory items requested by the recommendation
+            rec = db.recommendations.get(m_id)
+            if rec:
+                for part in rec["required_parts"]:
+                    name = part["part_name"]
+                    qty = part["quantity"]
+                    for inv_item in db.parts_inventory:
+                        if inv_item["part_name"] == name:
+                            inv_item["quantity"] = max(0, inv_item["quantity"] - qty)
+
+                # Reset failure state since mitigation order is active
+                db.predictions[m_id]["failure_probability"] = 0.05
+                db.predictions[m_id]["predicted_failure_type"] = "Normal Operation"
+                db.predictions[m_id]["time_to_failure_hours"] = None
+                db.recommendations.pop(m_id, None)
+
+            self.wfile.write(json.dumps({"status": "created", "work_order_id": new_id}).encode("utf-8"))
+            return
+
+        else:
+            self.send_response(404)
+            self.end_headers()
+            return
+
+    def do_PUT(self):
+        parsed_url = urllib.parse.urlparse(self.path)
+        path = parsed_url.path
+
+        # Read JSON body
+        content_length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(content_length).decode('utf-8')
+        try:
+            payload = json.loads(body) if body else {}
+        except Exception:
+            self.send_response(400)
+            self.end_headers()
+            return
+
+        # 1. Endpoint: PUT /work-orders/{id}
+        if path.startswith("/work-orders/"):
+            try:
+                parts = path.split("/")
+                wo_id = int(parts[2])
+            except ValueError:
+                self.send_response(400)
+                self.end_headers()
+                return
+
+            status = payload.get("status")
+            found = False
+            for wo in db.work_orders:
+                if wo["id"] == wo_id:
+                    wo["status"] = status
+                    if status == "completed":
+                        wo["completed_at"] = datetime.now().isoformat()
+                    found = True
+                    break
+
+            if found:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.end_headers()
+                self.wfile.write(json.dumps({"status": "updated"}).encode("utf-8"))
+            else:
+                self.send_response(404)
+                self.end_headers()
+            return
+        else:
+            self.send_response(404)
+            self.end_headers()
+            return
+
+def run_server():
+    server_address = ('', PORT)
+    httpd = http.server.HTTPServer(server_address, RouterHandler)
+    print(f"=========================================================")
+    print(f" FixForesight Zero-Dependency Server is running on port {PORT}")
+    print(f" Dashboard is live at: http://localhost:{PORT}")
+    print(f" Press Ctrl+C to terminate.")
+    print(f"=========================================================")
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\nStopping server...")
+        httpd.server_close()
 
 if __name__ == "__main__":
-    import uvicorn
-    # Local run helper
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    run_server()
