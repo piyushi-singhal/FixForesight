@@ -152,55 +152,68 @@
             font-weight: 600;
         }
 
-        /* Dashboard Workspace */
+        /* Workspace Grid */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: 320px 1fr 340px;
+            grid-template-columns: 240px 1fr;
             overflow: hidden;
             height: 100%;
         }
 
-        .sidebar-panel {
+        /* Side Navigation Bar */
+        .nav-sidebar {
             border-right: 1px solid var(--border-glass);
+            background: rgba(10, 15, 30, 0.4);
+            padding: 24px 16px;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            background: rgba(10, 15, 30, 0.15);
+            gap: 8px;
         }
 
-        .center-panel {
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-            padding: 24px;
-            gap: 24px;
-            background: rgba(10, 15, 30, 0.05);
-        }
-
-        .alerts-panel {
-            border-left: 1px solid var(--border-glass);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            background: rgba(10, 15, 30, 0.15);
-        }
-
-        /* Panel Headers */
-        .panel-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border-glass);
+        .nav-item {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            min-height: 56px;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
         }
 
-        .panel-title {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-secondary);
-            font-weight: 700;
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: rgba(99, 102, 241, 0.1);
+            color: #fff;
+            border-left: 3px solid var(--primary);
+        }
+
+        /* Page content wrapper */
+        .page-content {
+            overflow-y: auto;
+            padding: 28px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page-view {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .flex-col-gap {
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
         }
 
         /* Cards */
@@ -210,6 +223,7 @@
             border: 1px solid var(--border-glass);
             border-radius: 16px;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.35);
+            padding: 24px;
             transition: all 0.3s;
         }
 
@@ -217,13 +231,79 @@
             border-color: rgba(255, 255, 255, 0.12);
         }
 
-        /* List Items */
+        .card-title {
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+
+        /* 1. Dashboard View KPI Grid */
+        .dashboard-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .metric-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px;
+        }
+
+        .metric-icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .metric-icon-box.healthy { background: var(--success-glow); color: var(--success); }
+        .metric-icon-box.warning { background: var(--warning-glow); color: var(--warning); }
+        .metric-icon-box.danger { background: var(--danger-glow); color: var(--danger); }
+        .metric-icon-box.primary { background: var(--primary-glow); color: var(--primary); }
+
+        .metric-value {
+            font-size: 26px;
+            font-weight: 800;
+            font-family: var(--font-heading);
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* 2. Machines View Layout */
+        .machines-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 24px;
+            height: calc(100vh - 130px);
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .sidebar-panel {
+            border: 1px solid var(--border-glass);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: rgba(10, 15, 30, 0.3);
+        }
+
         .machine-list {
             padding: 16px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 10px;
+            flex: 1;
         }
 
         .machine-item {
@@ -268,10 +348,9 @@
             font-size: 10px;
             font-weight: 700;
         }
-
         .machine-prob-badge.healthy { background: var(--success-glow); color: var(--success); }
         .machine-prob-badge.warning { background: var(--warning-glow); color: var(--warning); }
-        .machine-prob-badge.danger { background: var(--danger-glow); color: var(--danger); animation: pulse-text 2s infinite; }
+        .machine-prob-badge.danger { background: var(--danger-glow); color: var(--danger); }
 
         .machine-metrics-row {
             display: flex;
@@ -280,15 +359,13 @@
             color: var(--text-secondary);
         }
 
-        /* Detail pane details */
-        .vitals-grid {
+        .machine-detail-grid {
             display: grid;
             grid-template-columns: 2fr 3fr;
             gap: 24px;
         }
 
-        .gauge-card {
-            padding: 20px;
+        .risk-level-card {
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -321,7 +398,6 @@
             stroke-linecap: round;
             transition: stroke-dasharray 0.5s ease;
         }
-
         .gauge-fill.healthy { stroke: var(--success); }
         .gauge-fill.warning { stroke: var(--warning); }
         .gauge-fill.danger { stroke: var(--danger); }
@@ -348,9 +424,7 @@
             letter-spacing: 0.05em;
         }
 
-        /* Charts */
         .chart-card {
-            padding: 20px;
             display: flex;
             flex-direction: column;
             gap: 14px;
@@ -393,9 +467,56 @@
             position: relative;
         }
 
-        /* Recommendations */
+        /* 3. Predictions View */
+        .predictions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+
+        .prediction-card {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .prediction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-glass);
+            padding-bottom: 10px;
+        }
+
+        .prediction-name {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .prediction-val-bar {
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.05);
+            overflow: hidden;
+        }
+
+        .prediction-val-fill {
+            height: 100%;
+        }
+        .prediction-val-fill.healthy { background: var(--success); }
+        .prediction-val-fill.warning { background: var(--warning); }
+        .prediction-val-fill.danger { background: var(--danger); }
+
+        /* 4. Recommendations Cards */
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            width: 100%;
+        }
+
         .rec-card {
-            padding: 24px;
             display: flex;
             flex-direction: column;
             gap: 18px;
@@ -414,7 +535,6 @@
             font-weight: 700;
             text-transform: uppercase;
         }
-
         .rec-priority-badge.critical { background: var(--danger-glow); color: var(--danger); }
         .rec-priority-badge.high { background: var(--warning-glow); color: var(--warning); }
         .rec-priority-badge.medium { background: var(--info-glow); color: var(--info); }
@@ -454,7 +574,6 @@
             font-weight: 700;
             text-transform: uppercase;
         }
-
         .part-badge.instock { background: var(--success-glow); color: var(--success); }
         .part-badge.lowstock { background: var(--warning-glow); color: var(--warning); }
         .part-badge.outofstock { background: var(--danger-glow); color: var(--danger); }
@@ -485,10 +604,49 @@
             transform: none;
         }
 
-        /* Alerts List */
+        /* 5. Analytics View Layout */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            width: 100%;
+        }
+
+        .analytics-bars-container {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            justify-content: center;
+        }
+
+        .analytics-bar-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .analytics-bar-lbl {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        .analytics-bar {
+            height: 12px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.04);
+            overflow: hidden;
+        }
+
+        .analytics-bar-fill {
+            height: 100%;
+        }
+        .analytics-bar-fill.healthy { background: var(--success); }
+        .analytics-bar-fill.warning { background: var(--warning); }
+        .analytics-bar-fill.critical { background: var(--danger); }
+
+        /* 6. Alerts & Search Results Lists */
         .alerts-list {
-            padding: 16px;
-            overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -503,7 +661,6 @@
             flex-direction: column;
             gap: 4px;
         }
-
         .alert-card.critical { border-left-color: var(--danger); background: rgba(244, 63, 94, 0.01); }
         .alert-card.warning { border-left-color: var(--warning); background: rgba(245, 158, 11, 0.01); }
         .alert-card.info { border-left-color: var(--info); }
@@ -524,38 +681,36 @@
             color: var(--text-muted);
         }
 
-        /* Search Results Overlay */
-        .search-results-overlay {
-            padding: 16px;
-            border-bottom: 1px solid var(--border-glass);
-            background: rgba(99, 102, 241, 0.05);
-            display: none;
-        }
-
         .search-results-list {
             display: flex;
             flex-direction: column;
             gap: 10px;
-            margin-top: 12px;
-            max-height: 220px;
-            overflow-y: auto;
+            width: 100%;
         }
 
         .search-item {
-            padding: 12px;
-            border-radius: 10px;
+            padding: 16px;
+            border-radius: 12px;
             background: rgba(255,255,255,0.02);
             border: 1px solid var(--border-glass);
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            font-size: 11px;
+            gap: 6px;
+            font-size: 12px;
         }
 
-        /* Animations */
-        @keyframes pulse-text {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         @keyframes pulse-dot {
             0% { transform: scale(1); opacity: 1; }
@@ -595,14 +750,13 @@
                 <span class="logo-text">FixForesight</span>
             </div>
 
-            <!-- Global Search bar -->
+            <!-- Global Search bar redirects to search page -->
             <form id="search-form" class="search-container">
-                <!-- Search Icon -->
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5">
                     <circle cx="11" cy="11" r="8" />
                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
-                <input type="text" id="search-input" class="search-input" placeholder="Search historical incidents (e.g. bearing, coolant, overheat)...">
+                <input type="text" id="search-input" class="search-input" placeholder="Search incidents (e.g. bearing, coolant)...">
                 <button type="button" id="clear-search-btn" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:10px; display:none;">Clear</button>
             </form>
 
@@ -635,94 +789,335 @@
         <!-- Workspace grid -->
         <div class="dashboard-grid">
             
-            <!-- Left sidebar: Machine directory -->
-            <aside class="sidebar-panel">
-                <div class="panel-header">
-                    <h2 class="panel-title">Monitored Units</h2>
-                    <span class="status-badge" style="padding: 2px 8px; font-size: 9px; gap: 4px;">
-                        <span class="glow-dot"></span> Live Vitals
-                    </span>
-                </div>
-                <div class="machine-list" id="machine-list-container">
-                    <!-- Loaded dynamically -->
+            <!-- Left Side-Navigation Bar -->
+            <aside class="nav-sidebar">
+                <div style="display: flex; flex-direction: column; height: 100%; justify-content: space-between;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div id="nav-dashboard" class="nav-item active" onclick="switchPage('dashboard')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+                            <span>Dashboard</span>
+                        </div>
+                        <div id="nav-machines" class="nav-item" onclick="switchPage('machines')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"/></svg>
+                            <span>Machines</span>
+                        </div>
+                        <div id="nav-predictions" class="nav-item" onclick="switchPage('predictions')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                            <span>Predictions</span>
+                        </div>
+                        <div id="nav-recommendations" class="nav-item" onclick="switchPage('recommendations')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                            <span>Recommendations</span>
+                        </div>
+                        <div id="nav-analytics" class="nav-item" onclick="switchPage('analytics')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                            <span>Analytics</span>
+                        </div>
+                        <div id="nav-search" class="nav-item" onclick="switchPage('search')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <span>Search Logs</span>
+                        </div>
+                    </div>
+                    <div style="padding: 10px; font-size: 10px; color: var(--text-muted); border-top: 1px solid var(--border-glass);">
+                        <span>v1.2.0 • Standalone HTML</span>
+                    </div>
                 </div>
             </aside>
 
-            <!-- Central analytics pane -->
-            <main class="center-panel">
-                <!-- Search overlay results -->
-                <div id="search-overlay" class="glass-card search-results-overlay">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
-                        <h3 style="font-size:13px; color:var(--primary); font-family:var(--font-heading); font-weight:700;">Historical Incident Logs</h3>
-                        <button onclick="hideSearch()" style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid var(--border-glass); padding:2px 8px; border-radius:4px; font-size:10px; cursor:pointer;">Close</button>
+            <!-- Main Viewport Content -->
+            <main class="page-content">
+                
+                <!-- 1. Dashboard View -->
+                <div id="page-dashboard" class="page-view flex-col-gap">
+                    <div>
+                        <h2 style="font-size: 24px; font-weight:700;">Factory Telemetry Overview</h2>
+                        <p style="color:var(--text-secondary); font-size:13px; margin-top:4px;">Plant status monitor for predictive IoT analytics.</p>
                     </div>
-                    <div class="search-results-list" id="search-results-container">
+
+                    <div class="dashboard-metrics-grid">
+                        <div class="glass-card metric-card">
+                            <div class="metric-icon-box primary">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+                            </div>
+                            <div>
+                                <div class="metric-value" id="kpi-total-machines">0</div>
+                                <div class="metric-label">Monitored Units</div>
+                            </div>
+                        </div>
+                        <div class="glass-card metric-card">
+                            <div class="metric-icon-box healthy">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            </div>
+                            <div>
+                                <div class="metric-value" id="kpi-healthy-machines">0</div>
+                                <div class="metric-label">Healthy Units</div>
+                            </div>
+                        </div>
+                        <div class="glass-card metric-card">
+                            <div class="metric-icon-box warning">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                            </div>
+                            <div>
+                                <div class="metric-value" id="kpi-warning-machines">0</div>
+                                <div class="metric-label">Warnings Active</div>
+                            </div>
+                        </div>
+                        <div class="glass-card metric-card">
+                            <div class="metric-icon-box danger">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                            </div>
+                            <div>
+                                <div class="metric-value" id="kpi-critical-machines">0</div>
+                                <div class="metric-label">Critical Status</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 5fr 4fr; gap: 28px;">
+                        <div class="flex-col-gap">
+                            <!-- Dependencies -->
+                            <div class="glass-card">
+                                <h3 class="card-title">Infrastructure Dependencies</h3>
+                                <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-glass); padding: 12px; border-radius: 10px; background:rgba(255,255,255,0.01)">
+                                        <span style="font-size: 13px; font-weight:600">FastAPI Router Server</span>
+                                        <span class="machine-prob-badge healthy" id="status-fastapi-badge">ONLINE</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-glass); padding: 12px; border-radius: 10px; background:rgba(255,255,255,0.01)">
+                                        <span style="font-size: 13px; font-weight:600">PostgreSQL DB State</span>
+                                        <span class="machine-prob-badge healthy" id="status-postgres-badge">CONNECTED</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-glass); padding: 12px; border-radius: 10px; background:rgba(255,255,255,0.01)">
+                                        <span style="font-size: 13px; font-weight:600">Apache Solr Search Logs</span>
+                                        <span class="machine-prob-badge healthy" id="status-solr-badge">INDEXED</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Distribution -->
+                            <div class="glass-card">
+                                <h3 class="card-title">Plant Health Index</h3>
+                                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                                    <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                                        <span>Healthy Index</span>
+                                        <strong id="dash-healthy-percent">--%</strong>
+                                    </div>
+                                    <div class="prediction-val-bar">
+                                        <div class="prediction-val-fill healthy" id="dash-healthy-fill" style="width: 0%"></div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 6px;">
+                                        <span>Warning / Critical</span>
+                                        <strong id="dash-risk-percent">--%</strong>
+                                    </div>
+                                    <div class="prediction-val-bar">
+                                        <div class="prediction-val-fill warning" id="dash-risk-fill" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Alerts feed -->
+                        <div class="glass-card" style="display: flex; flex-direction: column; min-height: 380px;">
+                            <div style="border-bottom: 1px solid var(--border-glass); padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                                <h3 class="card-title" style="margin:0;">System Event Feed</h3>
+                                <span class="part-badge instock">SNS Topic</span>
+                            </div>
+                            <div class="alerts-list" id="alerts-list-container" style="flex:1; overflow-y:auto; margin-top: 14px; max-height:330px;">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Machines View -->
+                <div id="page-machines" class="page-view" style="display: none;">
+                    <div class="machines-layout">
+                        <!-- Machine directory sub-sidebar -->
+                        <aside class="sidebar-panel">
+                            <div class="panel-header">
+                                <h2 class="panel-title">Monitored Units</h2>
+                                <span class="status-badge" style="padding: 2px 8px; font-size: 9px; gap: 4px;">
+                                    <span class="glow-dot"></span> Live Vitals
+                                </span>
+                            </div>
+                            <div class="machine-list" id="machine-list-container">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </aside>
+
+                        <!-- Central telemetry pane -->
+                        <div style="display: flex; flex-direction: column; gap: 24px; overflow-y: auto;">
+                            <div class="machine-detail-grid">
+                                <!-- Gauge -->
+                                <div class="glass-card risk-level-card">
+                                    <h3 style="font-size: 11px; align-self: flex-start; color: var(--text-secondary); text-transform: uppercase; font-weight:700;">Failure risk percentage</h3>
+                                    <div class="risk-gauge-container">
+                                        <svg class="gauge-svg">
+                                            <circle cx="70" cy="70" r="60" class="gauge-bg" />
+                                            <circle cx="70" cy="70" r="60" id="gauge-fill" class="gauge-fill healthy" stroke-dasharray="0 376.8" />
+                                        </svg>
+                                        <div class="gauge-text">
+                                            <span class="gauge-val" id="gauge-val-text">--%</span>
+                                            <span class="gauge-lbl">Index</span>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top:4px;">
+                                        <h4 id="gauge-failure-type" style="font-size:14px; font-weight:700; font-family:var(--font-heading)">Normal Operation</h4>
+                                        <p id="gauge-time-remaining" style="font-size:11px; color:var(--text-secondary); margin-top:2px; display:none;"></p>
+                                    </div>
+                                </div>
+
+                                <!-- Sparkline -->
+                                <div class="glass-card chart-card">
+                                    <div class="chart-header">
+                                        <h3 style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight:700;">Sensor Telemetry Sparkline</h3>
+                                        <div class="chart-tabs">
+                                            <button id="tab-temp" class="chart-tab active" onclick="setChartTab('temperature')">Temp</button>
+                                            <button id="tab-vibr" class="chart-tab" onclick="setChartTab('vibration')">Vibr</button>
+                                            <button id="tab-pres" class="chart-tab" onclick="setChartTab('pressure')">Pres</button>
+                                        </div>
+                                    </div>
+                                    <div class="chart-body" id="chart-svg-container">
+                                        <!-- Loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recommendation box -->
+                            <div class="glass-card rec-card" id="recommendations-container">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Predictions View -->
+                <div id="page-predictions" class="page-view" style="display: none;">
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="font-size: 24px; font-weight:700;">Predictive Maintenance Analysis (TensorFlow)</h2>
+                        <p style="color:var(--text-secondary); font-size:13px; margin-top:4px;">Continuous forecast analysis of industrial failure anomalies.</p>
+                    </div>
+                    <div class="predictions-grid" id="predictions-list-container">
                         <!-- Loaded dynamically -->
                     </div>
                 </div>
 
-                <!-- Telemetry section -->
-                <div class="vitals-grid">
-                    
-                    <!-- Gauge -->
-                    <div class="glass-card gauge-card">
-                        <h3 style="font-size: 11px; align-self: flex-start; color: var(--text-secondary); text-transform: uppercase; font-weight:700;">Failure risk percentage</h3>
-                        <div class="risk-gauge-container">
-                            <svg class="gauge-svg">
-                                <circle cx="70" cy="70" r="60" class="gauge-bg" />
-                                <circle cx="70" cy="70" r="60" id="gauge-fill" class="gauge-fill healthy" stroke-dasharray="0 376.8" />
+                <!-- 4. Recommendations View -->
+                <div id="page-recommendations" class="page-view" style="display: none;">
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="font-size: 24px; font-weight:700;">Prescriptive Action Plans & Parts Logistics</h2>
+                        <p style="color:var(--text-secondary); font-size:13px; margin-top:4px;">Recommended mitigations cross-referenced with real-time stock inventory.</p>
+                    </div>
+                    <div class="recommendations-grid" id="recommendations-list-container">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- 5. Analytics View -->
+                <div id="page-analytics" class="page-view" style="display: none;">
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="font-size: 24px; font-weight:700;">System Performance Analytics</h2>
+                        <p style="color:var(--text-secondary); font-size:13px; margin-top:4px;">Statistical telemetry metrics and fleet distribution analysis.</p>
+                    </div>
+                    <div class="analytics-grid">
+                        <!-- Health Distribution -->
+                        <div class="glass-card">
+                            <h3 class="card-title">Health Distribution Breakdown</h3>
+                            <div class="analytics-bars-container" id="analytics-health-bars">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+                        <!-- Average telemetry cards -->
+                        <div class="glass-card">
+                            <h3 class="card-title">Fleet Telemetry Averages</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px;">
+                                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
+                                    <span style="font-size: 11px; color: var(--text-muted);">AVG TEMPERATURE</span>
+                                    <div style="font-size: 20px; font-weight: 800; margin-top: 4px;" id="avg-temp-val">--°C</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
+                                    <span style="font-size: 11px; color: var(--text-muted);">AVG PRESSURE</span>
+                                    <div style="font-size: 20px; font-weight: 800; margin-top: 4px;" id="avg-pres-val">-- PSI</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
+                                    <span style="font-size: 11px; color: var(--text-muted);">AVG VIBRATION</span>
+                                    <div style="font-size: 20px; font-weight: 800; margin-top: 4px;" id="avg-vibr-val">-- m/s²</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
+                                    <span style="font-size: 11px; color: var(--text-muted);">AVG ROTATIONAL SPEED</span>
+                                    <div style="font-size: 20px; font-weight: 800; margin-top: 4px;" id="avg-rpm-val">-- RPM</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fleet Index table -->
+                    <div class="glass-card" style="margin-top: 28px;">
+                        <h3 class="card-title">Fleet Vitals Index</h3>
+                        <div style="overflow-x: auto;">
+                            <table class="parts-table">
+                                <thead>
+                                    <tr>
+                                        <th>Machine ID</th>
+                                        <th>Name</th>
+                                        <th>Vitals Status</th>
+                                        <th>Temperature</th>
+                                        <th>Pressure</th>
+                                        <th>Vibration</th>
+                                        <th>Speed</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fleet-table-body">
+                                    <!-- Loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Search View -->
+                <div id="page-search" class="page-view" style="display: none;">
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="font-size: 24px; font-weight:700;">Historical Incident Database Search</h2>
+                        <p style="color:var(--text-secondary); font-size:13px; margin-top:4px;">Query archived incident logs indexed in Apache Solr to check mitigation strategies.</p>
+                    </div>
+
+                    <div class="glass-card" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;">
+                        <form id="search-page-form" class="search-container" style="max-width: 100%;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                             </svg>
-                            <div class="gauge-text">
-                                <span class="gauge-val" id="gauge-val-text">--%</span>
-                                <span class="gauge-lbl">Index</span>
-                            </div>
-                        </div>
-                        <div style="margin-top:4px;">
-                            <h4 id="gauge-failure-type" style="font-size:14px; font-weight:700; font-family:var(--font-heading)">Normal Operation</h4>
-                            <p id="gauge-time-remaining" style="font-size:11px; color:var(--text-secondary); margin-top:2px; display:none;"></p>
-                        </div>
-                    </div>
-
-                    <!-- Telemetry Sparkline -->
-                    <div class="glass-card chart-card">
-                        <div class="chart-header">
-                            <h3 style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight:700;">Sensor Telemetry Sparkline</h3>
-                            <div class="chart-tabs">
-                                <button class="chart-tab active" onclick="setChartTab('temperature')">Temp</button>
-                                <button class="chart-tab" onclick="setChartTab('vibration')">Vibr</button>
-                                <button class="chart-tab" onclick="setChartTab('pressure')">Pres</button>
-                            </div>
-                        </div>
-                        <div class="chart-body" id="chart-svg-container">
-                            <!-- SVGs loaded dynamically -->
+                            <input type="text" id="search-page-input" class="search-input" placeholder="Search historical incident archives (e.g. bearing, coolant, overheat)...">
+                            <button type="button" id="clear-page-search-btn" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer; font-size:10px; display:none;">Clear</button>
+                        </form>
+                        
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                            <span style="font-size: 11px; color: var(--text-muted)">Quick Filters:</span>
+                            <button class="btn-action" style="padding: 4px 10px; font-size:10px; background:rgba(255,255,255,0.03); border:1px solid var(--border-glass); box-shadow:none;" onclick="triggerQuickSearch('Bearing')">Bearing</button>
+                            <button class="btn-action" style="padding: 4px 10px; font-size:10px; background:rgba(255,255,255,0.03); border:1px solid var(--border-glass); box-shadow:none;" onclick="triggerQuickSearch('Coolant')">Coolant</button>
+                            <button class="btn-action" style="padding: 4px 10px; font-size:10px; background:rgba(255,255,255,0.03); border:1px solid var(--border-glass); box-shadow:none;" onclick="triggerQuickSearch('Vibration')">Vibration</button>
+                            <button class="btn-action" style="padding: 4px 10px; font-size:10px; background:rgba(255,255,255,0.03); border:1px solid var(--border-glass); box-shadow:none;" onclick="triggerQuickSearch('Overheat')">Overheat</button>
+                            <button class="btn-action" style="padding: 4px 10px; font-size:10px; background:rgba(255,255,255,0.03); border:1px solid var(--border-glass); box-shadow:none;" onclick="triggerQuickSearch('Shaft')">Shaft</button>
                         </div>
                     </div>
 
+                    <div class="glass-card">
+                        <h3 class="card-title" id="search-results-heading">Search Results</h3>
+                        <div class="search-results-list" id="search-results-page-container">
+                            <p style="font-size:12px; color:var(--text-muted);">Submit a query to scan Solr archives.</p>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Recommendation box -->
-                <div class="glass-card rec-card" id="recommendations-container">
-                    <!-- Loaded dynamically -->
-                </div>
             </main>
-
-            <!-- Right panel: Event alerts -->
-            <aside class="alerts-panel" style="border-left: 1px solid var(--border-glass); display: flex; flex-direction: column; overflow: hidden; background: rgba(10, 15, 30, 0.15);">
-                <div class="panel-header">
-                    <h2 class="panel-title">AWS Alert Feed</h2>
-                    <span class="status-badge" style="color:var(--primary); font-size:10px; border-color:var(--primary-glow)">SNS</span>
-                </div>
-                <div class="alerts-list" id="alerts-container">
-                    <!-- Loaded dynamically -->
-                </div>
-            </aside>
-
         </div>
     </div>
 
     <!-- Controller Scripts -->
     <script>
-        const API_BASE = window.location.origin;
+        const API_BASE = window.location.port === '3000'
+            ? `${window.location.protocol}//${window.location.hostname}:8000`
+            : window.location.origin;
         
         let machines = [];
         let activeId = 'M101';
@@ -730,8 +1125,37 @@
         let rec = null;
         let alerts = [];
         let activeTab = 'temperature';
+        let activePage = 'dashboard';
 
-        // Fetch Health check
+        // Page Router switching
+        function switchPage(page) {
+            activePage = page;
+            
+            // Toggle active classes on nav
+            document.querySelectorAll('.nav-sidebar .nav-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            const activeNav = document.getElementById(`nav-${page}`);
+            if (activeNav) activeNav.classList.add('active');
+
+            // Toggle view panels
+            document.querySelectorAll('.page-view').forEach(el => {
+                el.style.display = 'none';
+            });
+            const activeView = document.getElementById(`page-${page}`);
+            if (activeView) activeView.style.display = page === 'dashboard' ? 'flex' : 'flex'; // Use flex layout inside page-view
+
+            // Context fetching
+            if (page === 'predictions') {
+                loadPredictions();
+            } else if (page === 'recommendations') {
+                loadGlobalRecommendations();
+            } else if (page === 'analytics') {
+                renderAnalyticsView();
+            }
+        }
+
+        // Fetch API Router Health status
         async function fetchHealth() {
             try {
                 const r = await fetch(`${API_BASE}/health`);
@@ -739,9 +1163,13 @@
                 const d = await r.json();
                 document.getElementById('status-api-text').textContent = 'healthy';
                 document.getElementById('status-api-text').style.color = 'var(--success)';
+                document.getElementById('status-fastapi-badge').textContent = 'ONLINE';
+                document.getElementById('status-fastapi-badge').className = 'machine-prob-badge healthy';
             } catch(e) {
                 document.getElementById('status-api-text').textContent = 'offline';
                 document.getElementById('status-api-text').style.color = 'var(--danger)';
+                document.getElementById('status-fastapi-badge').textContent = 'OFFLINE';
+                document.getElementById('status-fastapi-badge').className = 'machine-prob-badge danger';
             }
         }
 
@@ -751,7 +1179,17 @@
                 const r = await fetch(`${API_BASE}/machines`);
                 if (r.ok) {
                     machines = await r.json();
+                    
+                    // Render UI metrics
+                    document.getElementById('kpi-total-machines').textContent = machines.length;
+                    document.getElementById('kpi-healthy-machines').textContent = machines.filter(m => m.status === 'Healthy').length;
+                    document.getElementById('kpi-warning-machines').textContent = machines.filter(m => m.status === 'Warning').length;
+                    document.getElementById('kpi-critical-machines').textContent = machines.filter(m => m.status === 'Critical').length;
+                    
                     renderMachineList();
+                    if (activePage === 'analytics') {
+                        renderAnalyticsView();
+                    }
                 }
             } catch(e) {
                 console.error("Overview fetch failure", e);
@@ -780,13 +1218,18 @@
                     document.getElementById('anal-healthy').textContent = `${data.healthy}% H`;
                     document.getElementById('anal-warning').textContent = `${data.warning}% W`;
                     document.getElementById('anal-critical').textContent = `${data.critical}% C`;
+                    
+                    document.getElementById('dash-healthy-percent').textContent = `${data.healthy}%`;
+                    document.getElementById('dash-healthy-fill').style.width = `${data.healthy}%`;
+                    document.getElementById('dash-risk-percent').textContent = `${data.warning + data.critical}%`;
+                    document.getElementById('dash-risk-fill').style.width = `${data.warning + data.critical}%`;
                 }
             } catch(e) {
                 console.error("Analytics fetch failure", e);
             }
         }
 
-        // Fetch risk detail
+        // Fetch machine risk
         async function loadDetails(id) {
             try {
                 const r = await fetch(`${API_BASE}/machines/${id}/risk`);
@@ -800,7 +1243,7 @@
             }
         }
 
-        // Fetch prescription
+        // Fetch machine recommendations
         async function loadRecommendations(id) {
             try {
                 const r = await fetch(`${API_BASE}/machines/${id}/recommendations`);
@@ -813,7 +1256,7 @@
             }
         }
 
-        // Action: select machine
+        // Select machine
         function selectMachine(id) {
             activeId = id;
             document.querySelectorAll('.machine-item').forEach(el => {
@@ -826,75 +1269,117 @@
             loadRecommendations(id);
         }
 
-        // Action: switch tabs
+        // Switch telemetry chart tabs
         function setChartTab(tab) {
             activeTab = tab;
             document.querySelectorAll('.chart-tab').forEach(el => {
                 el.classList.remove('active');
-                if (el.textContent.toLowerCase().includes(tab.substring(0,3))) {
-                    el.classList.add('active');
-                }
             });
+            const activeBtn = document.getElementById(`tab-${tab.substring(0, 4)}`);
+            if (activeBtn) activeBtn.classList.add('active');
             renderChart();
         }
 
-        // Action: submit search
+        // Global and Page Search handles
         const searchForm = document.getElementById('search-form');
         const searchInput = document.getElementById('search-input');
         const clearSearchBtn = document.getElementById('clear-search-btn');
+
+        const searchPageForm = document.getElementById('search-page-form');
+        const searchPageInput = document.getElementById('search-page-input');
+        const clearPageSearchBtn = document.getElementById('clear-page-search-btn');
 
         searchForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const val = searchInput.value.trim();
             if (val) {
-                clearSearchBtn.style.display = 'block';
-                try {
-                    const r = await fetch(`${API_BASE}/search?q=${encodeURIComponent(val)}`);
-                    if (r.ok) {
-                        const data = await r.json();
-                        renderSearchOverlay(data);
-                    }
-                } catch(e) {
-                    console.error("Search query failed", e);
-                }
+                searchPageInput.value = val;
+                switchPage('search');
+                executeSolrSearch(val);
             }
         });
 
-        clearSearchBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            clearSearchBtn.style.display = 'none';
-            hideSearch();
+        searchPageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const val = searchPageInput.value.trim();
+            if (val) {
+                executeSolrSearch(val);
+            }
         });
 
-        function hideSearch() {
-            document.getElementById('search-overlay').style.display = 'none';
+        function triggerQuickSearch(term) {
+            searchPageInput.value = term;
+            executeSolrSearch(term);
         }
 
-        // Action: Authorize Work Order
-        async function authorizeWorkOrder() {
-            if (!rec || !rec.has_recommendation) return;
-            const btn = document.getElementById('btn-wo-authorize');
-            if (btn) {
-                btn.disabled = true;
-                btn.textContent = 'Scheduling...';
+        async function executeSolrSearch(val) {
+            clearPageSearchBtn.style.display = 'block';
+            const container = document.getElementById('search-results-page-container');
+            container.innerHTML = '<div style="display:flex; justify-content:center; padding: 20px;"><div class="spinner"></div></div>';
+            
+            try {
+                const r = await fetch(`${API_BASE}/search?q=${encodeURIComponent(val)}`);
+                if (r.ok) {
+                    const data = await r.json();
+                    document.getElementById('search-results-heading').textContent = `Search Results (${data.numFound} logs found)`;
+                    
+                    container.innerHTML = '';
+                    if (data.docs.length === 0) {
+                        container.innerHTML = '<p style="font-size:12px; color:var(--text-muted);">No incident archives match this query.</p>';
+                        return;
+                    }
+                    data.docs.forEach(doc => {
+                        const item = document.createElement('div');
+                        item.className = 'search-item';
+                        item.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--primary); font-size:12px;">
+                                <strong>Machine-${doc.machine_id}</strong>
+                                <span style="color:var(--text-muted)">${new Date(doc.date).toLocaleDateString()}</span>
+                            </div>
+                            <p style="margin-top:4px;"><span style="color:var(--danger)">Signature:</span> ${doc.failure_signature}</p>
+                            <p><span style="color:var(--success)">Correction:</span> ${doc.action_taken}</p>
+                            <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">
+                                Outcome: <span style="color:var(--success); font-weight:600">${doc.outcome}</span>
+                            </div>
+                        `;
+                        container.appendChild(item);
+                    });
+                }
+            } catch(e) {
+                container.innerHTML = '<p style="font-size:12px; color:var(--danger);">Search failure occurred.</p>';
             }
+        }
+
+        clearPageSearchBtn.addEventListener('click', () => {
+            searchPageInput.value = '';
+            clearPageSearchBtn.style.display = 'none';
+            document.getElementById('search-results-page-container').innerHTML = '<p style="font-size:12px; color:var(--text-muted);">Submit a query to scan Solr archives.</p>';
+            document.getElementById('search-results-heading').textContent = 'Search Results';
+        });
+
+        // Authorize Work Order from Recommendations page or Machines page
+        async function authorizeWorkOrder(machineId, priority, recommendationText) {
             try {
                 const r = await fetch(`${API_BASE}/work-orders`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        machine_id: activeId,
-                        priority: rec.priority,
-                        action_required: rec.recommendation
+                        machine_id: machineId,
+                        priority: priority,
+                        action_required: recommendationText
                     })
                 });
                 if (r.ok) {
-                    alert("Mitigation authorized successfully! Telemetry returning to normal.");
-                    // Refresh data
-                    loadMachines();
-                    loadDetails(activeId);
-                    loadRecommendations(activeId);
-                    fetchAnalytics();
+                    alert(`Mitigation authorized successfully for ${machineId}! Telemetry returning to normal.`);
+                    await loadMachines();
+                    await fetchAnalytics();
+                    await loadAlerts();
+                    if (activePage === 'machines' && activeId === machineId) {
+                        await loadDetails(machineId);
+                        await loadRecommendations(machineId);
+                    } else if (activePage === 'recommendations') {
+                        await loadGlobalRecommendations();
+                    }
                 }
             } catch(e) {
                 console.error("WO generate failure", e);
@@ -902,7 +1387,204 @@
             }
         }
 
-        // ----------------- RENDER METHODS -----------------
+        // Load TensorFlow predictions
+        async function loadPredictions() {
+            const container = document.getElementById('predictions-list-container');
+            container.innerHTML = '<div style="display:flex; justify-content:center; padding: 40px;"><div class="spinner"></div></div>';
+            
+            try {
+                const r = await fetch(`${API_BASE}/predictions`);
+                if (r.ok) {
+                    const data = await r.json();
+                    container.innerHTML = '';
+                    data.forEach(p => {
+                        const m = machines.find(item => item.machine_id === p.machine_id) || { machine_name: `Machine ${p.machine_id}` };
+                        const risk = p.failure_probability;
+                        const riskClass = risk >= 70 ? 'danger' : risk >= 30 ? 'warning' : 'healthy';
+                        
+                        const card = document.createElement('div');
+                        card.className = 'glass-card prediction-card';
+                        card.innerHTML = `
+                            <div class="prediction-header">
+                                <span class="prediction-name">${m.machine_name}</span>
+                                <span class="machine-prob-badge ${riskClass}">${p.machine_id}</span>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; font-size:12px;">
+                                <span style="color:var(--text-secondary)">Failure Probability:</span>
+                                <strong style="color:var(--${riskClass})">${risk}%</strong>
+                            </div>
+                            <div class="prediction-val-bar">
+                                <div class="prediction-val-fill ${riskClass}" style="width: ${risk}%"></div>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:4px; font-size:12px; margin-top:4px;">
+                                <div><span style="color:var(--text-secondary)">Forecast mode:</span> <strong>${p.predicted_failure}</strong></div>
+                                <div><span style="color:var(--text-secondary)">Est. remaining:</span> <strong>${p.time_to_failure}</strong></div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                }
+            } catch(e) {
+                container.innerHTML = '<p style="color:var(--danger)">Failed to load predictions.</p>';
+            }
+        }
+
+        // Load Global prescriptive recommendations
+        async function loadGlobalRecommendations() {
+            const container = document.getElementById('recommendations-list-container');
+            container.innerHTML = '<div style="display:flex; justify-content:center; padding: 40px;"><div class="spinner"></div></div>';
+            
+            try {
+                const r = await fetch(`${API_BASE}/recommendations`);
+                if (r.ok) {
+                    const recList = await r.json();
+                    container.innerHTML = '';
+                    
+                    if (recList.length === 0) {
+                        container.innerHTML = `
+                            <div class="glass-card" style="text-align:center; padding:40px; color:var(--text-secondary);">
+                                <h3>All Systems Operating Normally</h3>
+                                <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">No corrective repair recommendations detected.</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    // Hydrate detail inventory parts checklist for each recommendations
+                    for (let recObj of recList) {
+                        let detailedRec = recObj;
+                        try {
+                            const dResp = await fetch(`${API_BASE}/machines/${recObj.machine_id}/recommendations`);
+                            if (dResp.ok) detailedRec = await dResp.json();
+                        } catch(err) {}
+
+                        const mName = (machines.find(item => item.machine_id === detailedRec.machine_id) || {}).machine_name || `Machine ${detailedRec.machine_id}`;
+                        const priorityClass = detailedRec.priority.toLowerCase();
+                        
+                        let partsHtml = '';
+                        if (!detailedRec.parts_status || detailedRec.parts_status.length === 0) {
+                            partsHtml = '<p style="font-size:11px; color:var(--text-secondary);">No spares required.</p>';
+                        } else {
+                            partsHtml = `
+                                <table class="parts-table" style="margin-top:6px;">
+                                    <thead>
+                                        <tr>
+                                            <th>Part Name</th>
+                                            <th>Needed</th>
+                                            <th>Stock</th>
+                                            <th>Status</th>
+                                            <th style="text-align:right">Cost</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${detailedRec.parts_status.map(p => `
+                                            <tr>
+                                                <td>${p.part_name}</td>
+                                                <td>${p.quantity_required}</td>
+                                                <td>${p.stock_available}</td>
+                                                <td><span class="part-badge ${p.status}">${p.status}</span></td>
+                                                <td style="text-align:right">$${p.unit_cost.toFixed(2)}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            `;
+                        }
+
+                        const card = document.createElement('div');
+                        card.className = 'glass-card rec-card';
+                        card.innerHTML = `
+                            <div class="rec-title-row">
+                                <div>
+                                    <h3 style="font-size:16px; font-weight:700; display:flex; align-items:center; gap:6px; font-family:var(--font-heading)">
+                                        ${mName} Mitigation Action Plan
+                                    </h3>
+                                    <p style="font-size:9px; color:var(--text-muted); margin-top:2px;">Generated: ${new Date(detailedRec.created_at || new Date()).toLocaleString()}</p>
+                                </div>
+                                <span class="rec-priority-badge ${priorityClass}">${detailedRec.priority} Priority (Conf: ${detailedRec.confidence}%)</span>
+                            </div>
+                            <div class="rec-action-box">
+                                <span style="font-size:9px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Remediation Steps</span>
+                                <p style="font-size:12px; margin-top:4px; line-height:1.5;">${detailedRec.recommendation}</p>
+                            </div>
+                            <div>
+                                <span style="font-size:9px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Required Spare Parts Checklist</span>
+                                ${partsHtml}
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-glass); padding-top:14px; margin-top:6px;">
+                                <span style="font-size:11px; color:var(--text-secondary);">
+                                    Est. Duration: <strong>${detailedRec.estimated_duration_hours || 4} hrs</strong>
+                                </span>
+                                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                                    ${detailedRec.parts_missing ? '<span style="font-size:10px; color:var(--danger); font-weight:600;">Spares shortage warning</span>' : ''}
+                                    <button class="btn-action" onclick="authorizeWorkOrder('${detailedRec.machine_id}', '${detailedRec.priority}', '${detailedRec.recommendation.replace(/'/g, "\\'")}')">
+                                        Authorize Corrective Work Order
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    }
+                }
+            } catch(e) {
+                container.innerHTML = '<p style="color:var(--danger)">Failed to load global recommendations.</p>';
+            }
+        }
+
+        // Render Analytics view charts
+        function renderAnalyticsView() {
+            const totalM = machines.length || 1;
+            const avgTemp = (machines.reduce((sum, m) => sum + m.temperature, 0) / totalM).toFixed(1);
+            const avgPres = (machines.reduce((sum, m) => sum + m.pressure, 0) / totalM).toFixed(0);
+            const avgVibr = (machines.reduce((sum, m) => sum + m.vibration, 0) / totalM).toFixed(2);
+            const avgRpm = (machines.reduce((sum, m) => sum + m.rpm, 0) / totalM).toFixed(0);
+
+            document.getElementById('avg-temp-val').textContent = `${avgTemp}°C`;
+            document.getElementById('avg-pres-val').textContent = `${avgPres} PSI`;
+            document.getElementById('avg-vibr-val').textContent = `${avgVibr} m/s²`;
+            document.getElementById('avg-rpm-val').textContent = `${avgRpm} RPM`;
+
+            // Render health distribution bars
+            const healthyPct = Math.round((machines.filter(m => m.status === 'Healthy').length / totalM) * 100);
+            const warningPct = Math.round((machines.filter(m => m.status === 'Warning').length / totalM) * 100);
+            const criticalPct = Math.round((machines.filter(m => m.status === 'Critical').length / totalM) * 100);
+
+            const barContainer = document.getElementById('analytics-health-bars');
+            barContainer.innerHTML = `
+                <div class="analytics-bar-row">
+                    <div class="analytics-bar-lbl"><span>Healthy</span><strong>${healthyPct}%</strong></div>
+                    <div class="analytics-bar"><div class="analytics-bar-fill healthy" style="width: ${healthyPct}%"></div></div>
+                </div>
+                <div class="analytics-bar-row">
+                    <div class="analytics-bar-lbl"><span>Warning</span><strong>${warningPct}%</strong></div>
+                    <div class="analytics-bar"><div class="analytics-bar-fill warning" style="width: ${warningPct}%"></div></div>
+                </div>
+                <div class="analytics-bar-row">
+                    <div class="analytics-bar-lbl"><span>Critical</span><strong>${criticalPct}%</strong></div>
+                    <div class="analytics-bar"><div class="analytics-bar-fill critical" style="width: ${criticalPct}%"></div></div>
+                </div>
+            `;
+
+            // Render Table
+            const tbody = document.getElementById('fleet-table-body');
+            tbody.innerHTML = '';
+            machines.forEach(m => {
+                const statusClass = m.status === 'Critical' ? 'danger' : m.status === 'Warning' ? 'warning' : 'healthy';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${m.machine_id}</strong></td>
+                    <td>${m.machine_name}</td>
+                    <td><span class="machine-prob-badge ${statusClass}">${m.status}</span></td>
+                    <td>${m.temperature.toFixed(1)}°C</td>
+                    <td>${m.pressure.toFixed(0)} PSI</td>
+                    <td>${m.vibration.toFixed(2)} m/s²</td>
+                    <td>${m.rpm} RPM</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ----------------- RENDER SUB-METHODS FOR MACHINES VIEW -----------------
         
         function renderMachineList() {
             const container = document.getElementById('machine-list-container');
@@ -944,7 +1626,7 @@
             const label = detail && detail.prediction ? detail.prediction.predicted_failure : 'Normal Operation';
             const timeVal = detail && detail.prediction ? detail.prediction.time_to_failure : 'N/A';
             
-            const strokeDash = (prob / 100.0) * 376.8; // 2 * pi * 60 = 376.8
+            const strokeDash = (prob / 100.0) * 376.8;
             
             const fill = document.getElementById('gauge-fill');
             const valText = document.getElementById('gauge-val-text');
@@ -1004,19 +1686,15 @@
 
             const area = `${path} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
             
-            // Build elements using SVG DOM
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
             svg.setAttribute('style', 'width:100%; height:100%;');
             
-            // Gradients
             const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
             const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
             grad.setAttribute('id', 'chart-gradient-local');
-            grad.setAttribute('x1', '0');
-            grad.setAttribute('y1', '0');
-            grad.setAttribute('x2', '0');
-            grad.setAttribute('y2', '1');
+            grad.setAttribute('x1', '0'); grad.setAttribute('y1', '0');
+            grad.setAttribute('x2', '0'); grad.setAttribute('y2', '1');
             
             const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
             stop1.setAttribute('offset', '0%');
@@ -1027,29 +1705,22 @@
             stop2.setAttribute('stop-color', 'var(--primary)');
             stop2.setAttribute('stop-opacity', '0');
             
-            grad.appendChild(stop1);
-            grad.appendChild(stop2);
-            defs.appendChild(grad);
-            svg.appendChild(defs);
+            grad.appendChild(stop1); grad.appendChild(stop2);
+            defs.appendChild(grad); svg.appendChild(defs);
 
-            // Grids
             [30, 60, 90, 120].forEach(y => {
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                line.setAttribute('x1', '20');
-                line.setAttribute('y1', String(y));
-                line.setAttribute('x2', String(width - 20));
-                line.setAttribute('y2', String(y));
+                line.setAttribute('x1', '20'); line.setAttribute('y1', String(y));
+                line.setAttribute('x2', String(width - 20)); line.setAttribute('y2', String(y));
                 line.setAttribute('stroke', 'rgba(255,255,255,0.03)');
                 svg.appendChild(line);
             });
 
-            // Path Area
             const areaPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             areaPath.setAttribute('d', area);
             areaPath.setAttribute('fill', 'url(#chart-gradient-local)');
             svg.appendChild(areaPath);
 
-            // Stroke Path
             const strokePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             strokePath.setAttribute('d', path);
             strokePath.setAttribute('fill', 'none');
@@ -1059,7 +1730,6 @@
             strokePath.setAttribute('stroke-linejoin', 'round');
             svg.appendChild(strokePath);
 
-            // Dots
             points.forEach((p, i) => {
                 const val = detail.sensor_history[i][activeTab];
                 const isAnomaly = activeTab === 'vibration' && val > 5;
@@ -1078,20 +1748,15 @@
                 svg.appendChild(circle);
             });
 
-            // Axis labels
             const xText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            xText.setAttribute('x', '20');
-            xText.setAttribute('y', String(height - 4));
-            xText.setAttribute('fill', 'var(--text-muted)');
-            xText.setAttribute('font-size', '9');
+            xText.setAttribute('x', '20'); xText.setAttribute('y', String(height - 4));
+            xText.setAttribute('fill', 'var(--text-muted)'); xText.setAttribute('font-size', '9');
             xText.textContent = 'Time →';
             svg.appendChild(xText);
 
             const yText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            yText.setAttribute('x', String(width - 20));
-            yText.setAttribute('y', '15');
-            yText.setAttribute('fill', 'var(--text-muted)');
-            yText.setAttribute('font-size', '9');
+            yText.setAttribute('x', String(width - 20)); yText.setAttribute('y', '15');
+            yText.setAttribute('fill', 'var(--text-muted)'); yText.setAttribute('font-size', '9');
             yText.setAttribute('text-anchor', 'end');
             yText.textContent = `Max: ${maxVal.toFixed(1)}`;
             svg.appendChild(yText);
@@ -1107,7 +1772,7 @@
                 container.innerHTML = `
                     <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding: 20px 0;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5" style="margin-bottom:8px;">
-                            <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                             <polyline points="22 4 12 14.01 9 11.01" />
                         </svg>
                         <h3 style="font-size:14px; font-weight:700;">Vitals Stable & Normal</h3>
@@ -1162,11 +1827,11 @@
                     <span class="rec-priority-badge ${rec.priority.toLowerCase()}">${rec.priority} Priority (Conf: ${rec.confidence}%)</span>
                 </div>
                 <div class="rec-action-box">
-                    <span style="font-size:9px; font-weight:700; color:var(--text-muted); text-transform:uppercase; tracking-wider;">Remediation Steps</span>
+                    <span style="font-size:9px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Remediation Steps</span>
                     <p style="font-size:12px; margin-top:4px; line-height:1.5;">${rec.recommendation}</p>
                 </div>
                 <div>
-                    <span style="font-size:9px; font-weight:700; color:var(--text-muted); text-transform:uppercase; tracking-wider;">Required Spare Parts Checklist</span>
+                    <span style="font-size:9px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Required Spare Parts Checklist</span>
                     ${partsHtml}
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-glass); padding-top:14px; margin-top:6px;">
@@ -1175,7 +1840,7 @@
                     </span>
                     <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
                         ${rec.parts_missing ? `<span style="font-size:10px; color:var(--danger); font-weight:600; display:flex; align-items:center; gap:2px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg> Parts short stock warning</span>` : ''}
-                        <button class="btn-action" id="btn-wo-authorize" onclick="authorizeWorkOrder()">
+                        <button class="btn-action" id="btn-wo-authorize" onclick="authorizeWorkOrder('${activeId}', '${rec.priority}', '${rec.recommendation.replace(/'/g, "\\'")}')">
                             Authorize Corrective Work Order
                         </button>
                     </div>
@@ -1184,7 +1849,7 @@
         }
 
         function renderAlerts() {
-            const container = document.getElementById('alerts-container');
+            const container = document.getElementById('alerts-list-container');
             container.innerHTML = '';
             
             if (alerts.length === 0) {
@@ -1210,36 +1875,6 @@
                     <span class="alert-time">${new Date(a.created_at).toLocaleTimeString()}</span>
                 `;
                 container.appendChild(card);
-            });
-        }
-
-        function renderSearchOverlay(data) {
-            const overlay = document.getElementById('search-overlay');
-            const container = document.getElementById('search-results-container');
-            
-            container.innerHTML = '';
-            overlay.style.display = 'block';
-
-            if (data.docs.length === 0) {
-                container.innerHTML = '<p style="font-size:11px; color:var(--text-muted);">No historical log incidents match this search term.</p>';
-                return;
-            }
-
-            data.docs.forEach(doc => {
-                const item = document.createElement('div');
-                item.className = 'search-item';
-                item.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; font-weight:700; color:var(--primary); font-size: 12px;">
-                        <strong>Machine-${doc.machine_id}</strong>
-                        <span style="color:var(--text-muted)">${new Date(doc.date).toLocaleDateString()}</span>
-                    </div>
-                    <p style="margin-top:2px;"><span style="color:var(--danger)">Signature:</span> ${doc.failure_signature}</p>
-                    <p><span style="color:var(--success)">Correction:</span> ${doc.action_taken}</p>
-                    <div style="font-size:10px; color:var(--text-muted); margin-top:2px;">
-                        Outcome: <span style="color:var(--success); font-weight:600">${doc.outcome}</span>
-                    </div>
-                `;
-                container.appendChild(item);
             });
         }
 
