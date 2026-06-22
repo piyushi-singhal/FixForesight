@@ -88,7 +88,7 @@ export default function App() {
 
   const checkHealth = async () => {
     try {
-      const response = await fetch(`${window.location.protocol}//${window.location.hostname}:8000/health`);
+      const response = await fetch(`${window.location.origin}/health`);
       if (response.ok) {
         const data = await response.json();
         setSysHealth(data);
@@ -130,7 +130,7 @@ export default function App() {
   };
 
   // Helper: dynamic gauge properties
-  const selectedMachine = machines.find(m => m.id === activeId) || { name: `Machine-${activeId:03d}`, failure_probability: 0.05 };
+  const selectedMachine = machines.find(m => m.id === activeId) || { name: `Machine-${String(activeId).padStart(3, '0')}`, failure_probability: 0.05 };
   const currentRisk = selectedMachine.failure_probability;
   const strokeDash = currentRisk * 439.6; // Gauge circumference = 2 * pi * 70
 
