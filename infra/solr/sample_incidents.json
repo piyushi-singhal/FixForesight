@@ -1,0 +1,50 @@
+[
+  {
+    "id": "inc-001",
+    "machine_id": 1,
+    "failure_signature": "Vibration levels spike (bearing wear), high temperature near main drive spindle",
+    "action_taken": "Replaced rotary bearing B-10 and adjusted rotor alignment",
+    "outcome": "Resolved",
+    "date": "2026-03-15T08:00:00Z"
+  },
+  {
+    "id": "inc-002",
+    "machine_id": 3,
+    "failure_signature": "Overheating shutdown triggered, core temperature reached 99.1°C",
+    "action_taken": "Cleaned heat exchanger lines and replaced cooling fan F-8",
+    "outcome": "Resolved",
+    "date": "2026-04-01T14:30:00Z"
+  },
+  {
+    "id": "inc-003",
+    "machine_id": 4,
+    "failure_signature": "Pressure valve leak detected, line pressure fluctuated between 80-140 PSI",
+    "action_taken": "Replaced pressure valve V-12 and high-temp gasket",
+    "outcome": "Resolved",
+    "date": "2026-04-18T11:15:00Z"
+  },
+  {
+    "id": "inc-004",
+    "machine_id": 1,
+    "failure_signature": "Rotor locking and screeching noise, motor pulling double current",
+    "action_taken": "Complete bearing rebuild, replaced hydraulic pump seal",
+    "outcome": "Resolved",
+    "date": "2026-05-02T19:00:00Z"
+  },
+  {
+    "id": "inc-005",
+    "machine_id": 5,
+    "failure_signature": "Minor vibrations, belt slippage detected",
+    "action_taken": "Tightened drive belt, greased secondary drive gear linkages",
+    "outcome": "Resolved",
+    "date": "2026-05-20T10:00:00Z"
+  },
+  {
+    "id": "inc-006",
+    "machine_id": 3,
+    "failure_signature": "Thermal overload sensor tripped due to radiator blockage",
+    "action_taken": "Cleared intake vents, ran flush cycle on radiators",
+    "outcome": "Resolved",
+    "date": "2026-06-01T09:45:00Z"
+  }
+]
