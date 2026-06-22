@@ -970,10 +970,12 @@
                                 <div class="glass-card chart-card">
                                     <div class="chart-header">
                                         <h3 style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight:700;">Sensor Telemetry Sparkline</h3>
-                                        <div class="chart-tabs">
-                                            <button id="tab-temp" class="chart-tab active" onclick="setChartTab('temperature')">Temp</button>
-                                            <button id="tab-vibr" class="chart-tab" onclick="setChartTab('vibration')">Vibr</button>
-                                            <button id="tab-pres" class="chart-tab" onclick="setChartTab('pressure')">Pres</button>
+                                        <div class="chart-tabs" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                            <button id="tab-air_temp" class="chart-tab active" onclick="setChartTab('air_temperature')">Air Temp</button>
+                                            <button id="tab-proc_temp" class="chart-tab" onclick="setChartTab('process_temperature')">Proc Temp</button>
+                                            <button id="tab-speed" class="chart-tab" onclick="setChartTab('rotational_speed')">Speed</button>
+                                            <button id="tab-torque" class="chart-tab" onclick="setChartTab('torque')">Torque</button>
+                                            <button id="tab-wear" class="chart-tab" onclick="setChartTab('tool_wear')">Tool Wear</button>
                                         </div>
                                     </div>
                                     <div class="chart-body" id="chart-svg-container">
@@ -1029,22 +1031,26 @@
                         <!-- Average telemetry cards -->
                         <div class="glass-card">
                             <h3 class="card-title">Fleet Telemetry Averages</h3>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px;">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; margin-top: 10px;">
                                 <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
-                                    <span style="font-size: 11px; color: var(--text-muted);">AVG TEMPERATURE</span>
-                                    <div style="font-size: 20px; font-weight: 800; margin-top: 4px;" id="avg-temp-val">--°C</div>
+                                    <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">AIR TEMPERATURE (AVG)</span>
+                                    <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-air-temp-val">--°C</div>
                                 </div>
                                 <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
-                                    <span style="font-size: 11px; color: var(--text-muted);">AVG PRESSURE</span>
-                                    <div style="font-size: 20px; font-weight: 800; margin-top: 4px;" id="avg-pres-val">-- PSI</div>
+                                    <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">PROCESS TEMPERATURE (AVG)</span>
+                                    <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-proc-temp-val">--°C</div>
                                 </div>
                                 <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
-                                    <span style="font-size: 11px; color: var(--text-muted);">AVG VIBRATION</span>
-                                    <div style="font-size: 20px; font-weight: 800; margin-top: 4px;" id="avg-vibr-val">-- m/s²</div>
+                                    <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">ROTATIONAL SPEED (AVG)</span>
+                                    <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-speed-val">-- RPM</div>
                                 </div>
                                 <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
-                                    <span style="font-size: 11px; color: var(--text-muted);">AVG ROTATIONAL SPEED</span>
-                                    <div style="font-size: 20px; font-weight: 800; margin-top: 4px;" id="avg-rpm-val">-- RPM</div>
+                                    <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">TORQUE (AVG)</span>
+                                    <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-torque-val">-- Nm</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass); grid-column: span 2;">
+                                    <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">TOOL WEAR (AVG)</span>
+                                    <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-wear-val">-- min</div>
                                 </div>
                             </div>
                         </div>
@@ -1059,11 +1065,12 @@
                                     <tr>
                                         <th>Machine ID</th>
                                         <th>Name</th>
-                                        <th>Vitals Status</th>
-                                        <th>Temperature</th>
-                                        <th>Pressure</th>
-                                        <th>Vibration</th>
+                                        <th>Status</th>
+                                        <th>Air Temp</th>
+                                        <th>Proc Temp</th>
                                         <th>Speed</th>
+                                        <th>Torque</th>
+                                        <th>Tool Wear</th>
                                     </tr>
                                 </thead>
                                 <tbody id="fleet-table-body">
@@ -1120,11 +1127,28 @@
             : window.location.origin;
         
         let machines = [];
+
+        function getMachineName(id) {
+            const names = {
+                'M101': 'CNC Spindle Unit',
+                'M102': 'Hydraulic Press',
+                'M103': 'Injection Molder',
+                'M104': 'Robotic Arm Axis 3',
+                'M105': 'Cooling Compressor'
+            };
+            return names[id] || `Machine ${id}`;
+        }
+
+        function getMachineStatus(failureProbability) {
+            if (failureProbability >= 0.8) return 'Critical';
+            if (failureProbability >= 0.3) return 'Warning';
+            return 'Healthy';
+        }
         let activeId = 'M101';
         let detail = null;
         let rec = null;
         let alerts = [];
-        let activeTab = 'temperature';
+        let activeTab = 'air_temperature';
         let activePage = 'dashboard';
 
         // Page Router switching
@@ -1143,7 +1167,7 @@
                 el.style.display = 'none';
             });
             const activeView = document.getElementById(`page-${page}`);
-            if (activeView) activeView.style.display = page === 'dashboard' ? 'flex' : 'flex'; // Use flex layout inside page-view
+            if (activeView) activeView.style.display = 'flex';
 
             // Context fetching
             if (page === 'predictions') {
@@ -1182,9 +1206,9 @@
                     
                     // Render UI metrics
                     document.getElementById('kpi-total-machines').textContent = machines.length;
-                    document.getElementById('kpi-healthy-machines').textContent = machines.filter(m => m.status === 'Healthy').length;
-                    document.getElementById('kpi-warning-machines').textContent = machines.filter(m => m.status === 'Warning').length;
-                    document.getElementById('kpi-critical-machines').textContent = machines.filter(m => m.status === 'Critical').length;
+                    document.getElementById('kpi-healthy-machines').textContent = machines.filter(m => getMachineStatus(m.failure_probability) === 'Healthy').length;
+                    document.getElementById('kpi-warning-machines').textContent = machines.filter(m => getMachineStatus(m.failure_probability) === 'Warning').length;
+                    document.getElementById('kpi-critical-machines').textContent = machines.filter(m => getMachineStatus(m.failure_probability) === 'Critical').length;
                     
                     renderMachineList();
                     if (activePage === 'analytics') {
@@ -1275,7 +1299,13 @@
             document.querySelectorAll('.chart-tab').forEach(el => {
                 el.classList.remove('active');
             });
-            const activeBtn = document.getElementById(`tab-${tab.substring(0, 4)}`);
+            let tabId = 'tab-air_temp';
+            if (tab === 'process_temperature') tabId = 'tab-proc_temp';
+            else if (tab === 'rotational_speed') tabId = 'tab-speed';
+            else if (tab === 'torque') tabId = 'tab-torque';
+            else if (tab === 'tool_wear') tabId = 'tab-wear';
+            
+            const activeBtn = document.getElementById(tabId);
             if (activeBtn) activeBtn.classList.add('active');
             renderChart();
         }
@@ -1398,7 +1428,7 @@
                     const data = await r.json();
                     container.innerHTML = '';
                     data.forEach(p => {
-                        const m = machines.find(item => item.machine_id === p.machine_id) || { machine_name: `Machine ${p.machine_id}` };
+                        const machineName = getMachineName(p.machine_id);
                         const risk = p.failure_probability;
                         const riskClass = risk >= 70 ? 'danger' : risk >= 30 ? 'warning' : 'healthy';
                         
@@ -1406,7 +1436,7 @@
                         card.className = 'glass-card prediction-card';
                         card.innerHTML = `
                             <div class="prediction-header">
-                                <span class="prediction-name">${m.machine_name}</span>
+                                <span class="prediction-name">${machineName}</span>
                                 <span class="machine-prob-badge ${riskClass}">${p.machine_id}</span>
                             </div>
                             <div style="display:flex; justify-content:space-between; font-size:12px;">
@@ -1458,7 +1488,7 @@
                             if (dResp.ok) detailedRec = await dResp.json();
                         } catch(err) {}
 
-                        const mName = (machines.find(item => item.machine_id === detailedRec.machine_id) || {}).machine_name || `Machine ${detailedRec.machine_id}`;
+                        const mName = getMachineName(detailedRec.machine_id);
                         const priorityClass = detailedRec.priority.toLowerCase();
                         
                         let partsHtml = '';
@@ -1483,7 +1513,7 @@
                                                 <td>${p.quantity_required}</td>
                                                 <td>${p.stock_available}</td>
                                                 <td><span class="part-badge ${p.status}">${p.status}</span></td>
-                                                <td style="text-align:right">$${p.unit_cost.toFixed(2)}</td>
+                                                <td style="text-align:right; color:var(--text-secondary)">$${p.unit_cost.toFixed(2)}</td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -1534,20 +1564,22 @@
         // Render Analytics view charts
         function renderAnalyticsView() {
             const totalM = machines.length || 1;
-            const avgTemp = (machines.reduce((sum, m) => sum + m.temperature, 0) / totalM).toFixed(1);
-            const avgPres = (machines.reduce((sum, m) => sum + m.pressure, 0) / totalM).toFixed(0);
-            const avgVibr = (machines.reduce((sum, m) => sum + m.vibration, 0) / totalM).toFixed(2);
-            const avgRpm = (machines.reduce((sum, m) => sum + m.rpm, 0) / totalM).toFixed(0);
+            const avgAirTemp = (machines.reduce((sum, m) => sum + (m.air_temperature || 0), 0) / totalM).toFixed(1);
+            const avgProcTemp = (machines.reduce((sum, m) => sum + (m.process_temperature || 0), 0) / totalM).toFixed(1);
+            const avgSpeed = (machines.reduce((sum, m) => sum + (m.rotational_speed || 0), 0) / totalM).toFixed(0);
+            const avgTorque = (machines.reduce((sum, m) => sum + (m.torque || 0), 0) / totalM).toFixed(1);
+            const avgToolWear = (machines.reduce((sum, m) => sum + (m.tool_wear || 0), 0) / totalM).toFixed(1);
 
-            document.getElementById('avg-temp-val').textContent = `${avgTemp}°C`;
-            document.getElementById('avg-pres-val').textContent = `${avgPres} PSI`;
-            document.getElementById('avg-vibr-val').textContent = `${avgVibr} m/s²`;
-            document.getElementById('avg-rpm-val').textContent = `${avgRpm} RPM`;
+            document.getElementById('avg-air-temp-val').textContent = `${avgAirTemp}°C`;
+            document.getElementById('avg-proc-temp-val').textContent = `${avgProcTemp}°C`;
+            document.getElementById('avg-speed-val').textContent = `${avgSpeed} RPM`;
+            document.getElementById('avg-torque-val').textContent = `${avgTorque} Nm`;
+            document.getElementById('avg-wear-val').textContent = `${avgToolWear} min`;
 
             // Render health distribution bars
-            const healthyPct = Math.round((machines.filter(m => m.status === 'Healthy').length / totalM) * 100);
-            const warningPct = Math.round((machines.filter(m => m.status === 'Warning').length / totalM) * 100);
-            const criticalPct = Math.round((machines.filter(m => m.status === 'Critical').length / totalM) * 100);
+            const healthyPct = Math.round((machines.filter(m => getMachineStatus(m.failure_probability) === 'Healthy').length / totalM) * 100);
+            const warningPct = Math.round((machines.filter(m => getMachineStatus(m.failure_probability) === 'Warning').length / totalM) * 100);
+            const criticalPct = Math.round((machines.filter(m => getMachineStatus(m.failure_probability) === 'Critical').length / totalM) * 100);
 
             const barContainer = document.getElementById('analytics-health-bars');
             barContainer.innerHTML = `
@@ -1569,16 +1601,18 @@
             const tbody = document.getElementById('fleet-table-body');
             tbody.innerHTML = '';
             machines.forEach(m => {
-                const statusClass = m.status === 'Critical' ? 'danger' : m.status === 'Warning' ? 'warning' : 'healthy';
+                const status = getMachineStatus(m.failure_probability);
+                const statusClass = status === 'Critical' ? 'danger' : status === 'Warning' ? 'warning' : 'healthy';
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><strong>${m.machine_id}</strong></td>
-                    <td>${m.machine_name}</td>
-                    <td><span class="machine-prob-badge ${statusClass}">${m.status}</span></td>
-                    <td>${m.temperature.toFixed(1)}°C</td>
-                    <td>${m.pressure.toFixed(0)} PSI</td>
-                    <td>${m.vibration.toFixed(2)} m/s²</td>
-                    <td>${m.rpm} RPM</td>
+                    <td>${getMachineName(m.machine_id)}</td>
+                    <td><span class="machine-prob-badge ${statusClass}">${status}</span></td>
+                    <td>${(m.air_temperature || 0).toFixed(1)}°C</td>
+                    <td>${(m.process_temperature || 0).toFixed(1)}°C</td>
+                    <td>${m.rotational_speed || 0} RPM</td>
+                    <td>${(m.torque || 0).toFixed(1)} Nm</td>
+                    <td>${(m.tool_wear || 0).toFixed(1)} min</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -1591,7 +1625,8 @@
             container.innerHTML = '';
             
             machines.forEach(m => {
-                const riskLevel = m.status === 'Critical' ? 'danger' : m.status === 'Warning' ? 'warning' : 'healthy';
+                const status = getMachineStatus(m.failure_probability);
+                const riskLevel = status === 'Critical' ? 'danger' : status === 'Warning' ? 'warning' : 'healthy';
                 const isActive = m.machine_id === activeId;
                 
                 const item = document.createElement('div');
@@ -1606,15 +1641,16 @@
                                 <circle cx="12" cy="12" r="10" />
                                 <circle cx="12" cy="12" r="4" />
                             </svg>
-                            <span>${m.machine_name}</span>
+                            <span>${getMachineName(m.machine_id)}</span>
                         </div>
-                        <span class="machine-prob-badge ${riskLevel}">${m.status}</span>
+                        <span class="machine-prob-badge ${riskLevel}">${status}</span>
                     </div>
-                    <div class="machine-metrics-row">
-                        <span>T: ${m.temperature.toFixed(1)}°C</span>
-                        <span>P: ${m.pressure.toFixed(0)} PSI</span>
-                        <span>V: ${m.vibration.toFixed(1)}m/s²</span>
-                        <span>RPM: ${m.rpm}</span>
+                    <div class="machine-metrics-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; font-size: 10px; margin-top: 4px;">
+                        <span>Air Temp: ${m.air_temperature.toFixed(1)}°C</span>
+                        <span>Proc Temp: ${m.process_temperature.toFixed(1)}°C</span>
+                        <span>Speed: ${m.rotational_speed} RPM</span>
+                        <span>Torque: ${m.torque.toFixed(1)} Nm</span>
+                        <span style="grid-column: span 2">Tool Wear: ${m.tool_wear.toFixed(1)} min</span>
                     </div>
                 `;
                 container.appendChild(item);
@@ -1667,14 +1703,14 @@
             const height = 150;
             const padding = 20;
 
-            const values = detail.sensor_history.map(h => h[activeTab]);
+            const values = detail.sensor_history.map(h => h[activeTab] || 0);
             const maxVal = Math.max(...values, 1) * 1.05;
             const minVal = Math.min(...values, 0) * 0.95;
             const valRange = maxVal - minVal || 1;
 
             const points = detail.sensor_history.map((h, i) => {
                 const x = padding + (i * (width - padding * 2)) / (detail.sensor_history.length - 1);
-                const val = h[activeTab];
+                const val = h[activeTab] || 0;
                 const y = height - padding - ((val - minVal) * (height - padding * 2)) / valRange;
                 return { x, y };
             });
@@ -1731,8 +1767,8 @@
             svg.appendChild(strokePath);
 
             points.forEach((p, i) => {
-                const val = detail.sensor_history[i][activeTab];
-                const isAnomaly = activeTab === 'vibration' && val > 5;
+                const val = detail.sensor_history[i][activeTab] || 0;
+                const isAnomaly = isPointAnomaly(activeTab, val);
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('cx', String(p.x));
                 circle.setAttribute('cy', String(p.y));
@@ -1762,6 +1798,15 @@
             svg.appendChild(yText);
 
             container.appendChild(svg);
+        }
+
+        function isPointAnomaly(tab, val) {
+            if (tab === 'air_temperature' && val > 90.0) return true;
+            if (tab === 'process_temperature' && val > 95.0) return true;
+            if (tab === 'rotational_speed' && val > 3200) return true;
+            if (tab === 'torque' && val > 4.5) return true;
+            if (tab === 'tool_wear' && val > 10.0) return true;
+            return false;
         }
 
         function renderRecommendations() {

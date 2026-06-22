@@ -1,12 +1,12 @@
 -- FixForesight Seed Data Script (Contract Aligned)
 
 -- 1. Populate Machines Directory
-INSERT INTO machines (machine_id, machine_name, status, temperature, pressure, vibration, rpm) VALUES
-('M101', 'CNC Spindle Unit', 'Warning', 75.0, 30.0, 4.8, 2500),
-('M102', 'Hydraulic Press', 'Healthy', 48.5, 120.0, 0.8, 1200),
-('M103', 'Injection Molder', 'Critical', 99.1, 85.0, 2.1, 1800),
-('M104', 'Robotic Arm Axis 3', 'Healthy', 35.2, 10.0, 1.2, 900),
-('M105', 'Cooling Compressor', 'Warning', 62.4, 145.0, 3.4, 3000);
+INSERT INTO machines (machine_id, machine_name, status, air_temperature, process_temperature, rotational_speed, torque, tool_wear) VALUES
+('M101', 'CNC Spindle Unit', 'Warning', 75.0, 78.5, 2500, 4.8, 0.5),
+('M102', 'Hydraulic Press', 'Healthy', 48.5, 52.1, 1200, 0.8, 0.0),
+('M103', 'Injection Molder', 'Critical', 99.1, 101.3, 1800, 2.1, 12.0),
+('M104', 'Robotic Arm Axis 3', 'Healthy', 35.2, 38.6, 900, 1.2, 0.0),
+('M105', 'Cooling Compressor', 'Warning', 62.4, 66.8, 3000, 3.4, 4.2);
 
 -- 2. Populate Predictions
 INSERT INTO predictions (machine_id, failure_probability, predicted_failure, time_to_failure) VALUES
@@ -24,9 +24,9 @@ INSERT INTO recommendations (machine_id, recommendation, priority, confidence) V
 
 -- 4. Populate Alerts
 INSERT INTO alerts (machine_id, severity, message) VALUES
-('M101', 'High', 'Machine M101 vibration velocity exceeded safe envelope (4.8 mm/s). Bearing failure risk exceeds 80%.'),
-('M103', 'Critical', 'Machine M103 temperature reached critical levels (99.1°C). core shutdown initiated. Scheduled emergency action required.'),
-('M105', 'Medium', 'Machine M105 line pressure fluctuated. Recalibration of sensor recommended.');
+('M101', 'High', 'Machine M101 torque exceeded safe envelope (4.8 Nm). Bearing failure risk exceeds 80%.'),
+('M103', 'Critical', 'Machine M103 process temperature reached critical levels (101.3°C). core shutdown initiated. Scheduled emergency action required.'),
+('M105', 'Medium', 'Machine M105 rotational speed fluctuated. Recalibration of sensor recommended.');
 
 -- 5. Populate Parts Inventory
 INSERT INTO parts_inventory (part_name, quantity, min_required, unit_cost) VALUES

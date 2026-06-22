@@ -3,12 +3,14 @@ from typing import Optional, List, Dict, Any
 
 class MachineResponse(BaseModel):
     machine_id: str
-    machine_name: str
-    status: str
-    temperature: float
-    pressure: float
-    vibration: float
-    rpm: int
+    air_temperature: float
+    process_temperature: float
+    rotational_speed: int
+    torque: float
+    tool_wear: float
+    failure_probability: float
+    predicted_failure: str
+    recommendation: str
 
 class PredictionResponse(BaseModel):
     machine_id: str

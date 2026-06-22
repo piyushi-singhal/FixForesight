@@ -14,21 +14,14 @@ Retrieves the list of all monitored machines with their latest live vitals.
 [
   {
     "machine_id": "M101",
-    "machine_name": "CNC Spindle Unit",
-    "status": "Warning",
-    "temperature": 75.0,
-    "pressure": 30.0,
-    "vibration": 4.8,
-    "rpm": 2500
-  },
-  {
-    "machine_id": "M102",
-    "machine_name": "Hydraulic Press",
-    "status": "Healthy",
-    "temperature": 48.5,
-    "pressure": 120.0,
-    "vibration": 0.8,
-    "rpm": 1200
+    "air_temperature": 302.5,
+    "process_temperature": 309.1,
+    "rotational_speed": 1450,
+    "torque": 40.2,
+    "tool_wear": 120,
+    "failure_probability": 0.82,
+    "predicted_failure": "Machine Failure",
+    "recommendation": "Schedule preventive maintenance"
   }
 ]
 ```
@@ -137,10 +130,11 @@ Queries historical incident logs indexed in Apache Solr.
 * `machine_id` (VARCHAR PRIMARY KEY)
 * `machine_name` (VARCHAR)
 * `status` (VARCHAR)
-* `temperature` (DOUBLE PRECISION)
-* `pressure` (DOUBLE PRECISION)
-* `vibration` (DOUBLE PRECISION)
-* `rpm` (INT)
+* `air_temperature` (DOUBLE PRECISION)
+* `process_temperature` (DOUBLE PRECISION)
+* `rotational_speed` (INT)
+* `torque` (DOUBLE PRECISION)
+* `tool_wear` (DOUBLE PRECISION)
 * `created_at` (TIMESTAMP)
 
 ### predictions

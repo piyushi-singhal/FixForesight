@@ -12,10 +12,11 @@ CREATE TABLE machines (
     machine_id VARCHAR(50) PRIMARY KEY,
     machine_name VARCHAR(100) NOT NULL,
     status VARCHAR(50) NOT NULL,
-    temperature DOUBLE PRECISION NOT NULL,
-    pressure DOUBLE PRECISION NOT NULL,
-    vibration DOUBLE PRECISION NOT NULL,
-    rpm INT NOT NULL,
+    air_temperature DOUBLE PRECISION NOT NULL,
+    process_temperature DOUBLE PRECISION NOT NULL,
+    rotational_speed INT NOT NULL,
+    torque DOUBLE PRECISION NOT NULL,
+    tool_wear DOUBLE PRECISION NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

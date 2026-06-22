@@ -31,8 +31,29 @@ import {
   resetWorkOrderStatus
 } from './store';
 
+import { getPredictions } from './services/predictionService';
+import { getRecommendations } from './services/recommendationService';
+import { getAnalytics } from './services/analyticsService';
+
 export default function App() {
   const dispatch = useDispatch();
+
+  const getMachineName = (id) => {
+    const names = {
+      'M101': 'CNC Spindle Unit',
+      'M102': 'Hydraulic Press',
+      'M103': 'Injection Molder',
+      'M104': 'Robotic Arm Axis 3',
+      'M105': 'Cooling Compressor'
+    };
+    return names[id] || `Machine ${id}`;
+  };
+
+  const getMachineStatus = (failureProbability) => {
+    if (failureProbability >= 0.8) return 'Critical';
+    if (failureProbability >= 0.3) return 'Warning';
+    return 'Healthy';
+  };
   
   // Redux Selectors
   const machines = useSelector((state) => state.machines.list);
@@ -55,7 +76,7 @@ export default function App() {
 
   // Local State for Tabs / Navigation / Custom Page Data
   const [activePage, setActivePage] = useState('dashboard'); // dashboard, machines, predictions, recommendations, analytics, search
-  const [activeTab, setActiveTab] = useState('temperature'); // temperature, vibration, pressure
+  const [activeTab, setActiveTab] = useState('air_temperature'); // air_temperature, process_temperature, rotational_speed, torque, tool_wear
   const [sysHealth, setSysHealth] = useState({ status: 'healthy', postgres: 'healthy', localstack: 'healthy', solr: 'healthy' });
   const [analytics, setAnalytics] = useState({ healthy: 60, warning: 40, critical: 0 });
   const [predictions, setPredictions] = useState([]);
@@ -121,17 +142,16 @@ export default function App() {
 
   const checkHealth = async () => {
     try {
+      // Route health check via FastAPI
       const response = await fetch(`${apiBase}/health`);
       if (response.ok) {
         const data = await response.json();
         setSysHealth(data);
       }
       
-      const analResp = await fetch(`${apiBase}/analytics`);
-      if (analResp.ok) {
-        const analData = await analResp.json();
-        setAnalytics(analData);
-      }
+      // Route global analytics via Service Layer
+      const analData = await getAnalytics();
+      setAnalytics(analData);
     } catch (e) {
       setSysHealth({ status: 'offline', postgres: 'unhealthy', localstack: 'unhealthy', solr: 'unhealthy' });
     }
@@ -140,11 +160,9 @@ export default function App() {
   const loadPredictions = async () => {
     try {
       setPredictionsLoading(true);
-      const resp = await fetch(`${apiBase}/predictions`);
-      if (resp.ok) {
-        const data = await resp.json();
-        setPredictions(data);
-      }
+      // Route predictions via Service Layer
+      const data = await getPredictions();
+      setPredictions(data);
     } catch (e) {
       console.error("Failed to load predictions", e);
     } finally {
@@ -155,34 +173,33 @@ export default function App() {
   const loadAllRecommendations = async () => {
     try {
       setRecsLoading(true);
-      const resp = await fetch(`${apiBase}/recommendations`);
-      if (resp.ok) {
-        const list = await resp.json();
-        const detailedList = await Promise.all(
-          list.map(async (r) => {
-            try {
-              const dResp = await fetch(`${apiBase}/machines/${r.machine_id}/recommendations`);
-              if (dResp.ok) {
-                return await dResp.json();
-              }
-            } catch (err) {
-              console.error(err);
+      // Route recommendations via Service Layer
+      const list = await getRecommendations();
+      const detailedList = await Promise.all(
+        list.map(async (r) => {
+          try {
+            // Route detailed recommendations via FastAPI path
+            const dResp = await fetch(`${apiBase}/machines/${r.machine_id}/recommendations`);
+            if (dResp.ok) {
+              return await dResp.json();
             }
-            return {
-              machine_id: r.machine_id,
-              has_recommendation: true,
-              recommendation: r.recommendation,
-              priority: r.priority,
-              confidence: r.confidence,
-              parts_status: [],
-              parts_missing: false,
-              estimated_duration_hours: 4,
-              created_at: new Date().toISOString()
-            };
-          })
-        );
-        setRecommendations(detailedList);
-      }
+          } catch (err) {
+            console.error(err);
+          }
+          return {
+            machine_id: r.machine_id,
+            has_recommendation: true,
+            recommendation: r.recommendation,
+            priority: r.priority,
+            confidence: r.confidence,
+            parts_status: [],
+            parts_missing: false,
+            estimated_duration_hours: 4,
+            created_at: new Date().toISOString()
+          };
+        })
+      );
+      setRecommendations(detailedList);
     } catch (e) {
       console.error("Failed to load global recommendations", e);
     } finally {
@@ -229,14 +246,14 @@ export default function App() {
     const height = 200;
     const padding = 20;
 
-    const values = history.map(h => h[key]);
+    const values = history.map(h => h[key] || 0);
     const maxVal = Math.max(...values, 1) * 1.05;
     const minVal = Math.min(...values, 0) * 0.95;
     const valRange = maxVal - minVal || 1;
 
     const points = history.map((h, i) => {
       const x = padding + (i * (width - padding * 2)) / (history.length - 1);
-      const val = h[key];
+      const val = h[key] || 0;
       const y = height - padding - ((val - minVal) * (height - padding * 2)) / valRange;
       return { x, y };
     });
@@ -250,8 +267,16 @@ export default function App() {
     return { path, area, points, minVal, maxVal };
   };
 
+  const isPointAnomaly = (tab, val) => {
+    if (tab === 'air_temperature' && val > 90.0) return true;
+    if (tab === 'process_temperature' && val > 95.0) return true;
+    if (tab === 'rotational_speed' && val > 3200) return true;
+    if (tab === 'torque' && val > 4.5) return true;
+    if (tab === 'tool_wear' && val > 10.0) return true;
+    return false;
+  };
+
   const trendData = detail ? getSvgPathData(detail.sensor_history, activeTab) : { path: '', area: '', points: [] };
-  const selectedMachine = machines.find(m => m.machine_id === activeId) || { machine_name: `Machine-${activeId}`, status: 'Healthy', rpm: 1000 };
   const currentRisk = detail && detail.prediction ? detail.prediction.failure_probability : 5;
   const strokeDash = (currentRisk / 100.0) * 439.6;
 
@@ -260,9 +285,9 @@ export default function App() {
   // 1. Dashboard View
   const renderDashboardPage = () => {
     const totalCount = machines.length;
-    const healthyCount = machines.filter(m => m.status === 'Healthy').length;
-    const warningCount = machines.filter(m => m.status === 'Warning').length;
-    const criticalCount = machines.filter(m => m.status === 'Critical').length;
+    const healthyCount = machines.filter(m => getMachineStatus(m.failure_probability) === 'Healthy').length;
+    const warningCount = machines.filter(m => getMachineStatus(m.failure_probability) === 'Warning').length;
+    const criticalCount = machines.filter(m => getMachineStatus(m.failure_probability) === 'Critical').length;
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -276,7 +301,7 @@ export default function App() {
         {/* KPIs row */}
         <div className="dashboard-metrics-grid">
           <div className="glass-card metric-card">
-            <div className="metric-icon-box" style={{ background: 'var(--primary-glow)', color: 'var(--primary)' }}>
+            <div className="metric-icon-box style={{ background: 'var(--primary-glow)', color: 'var(--primary)' }}">
               <Cpu size={20} />
             </div>
             <div>
@@ -429,7 +454,8 @@ export default function App() {
               <div style={{ display: 'flex', justifyContent: 'center', margin: '40px 0' }}><div className="spinner"></div></div>
             ) : (
               machines.map((m) => {
-                const riskLevel = m.status === 'Critical' ? 'danger' : m.status === 'Warning' ? 'warning' : 'healthy';
+                const status = getMachineStatus(m.failure_probability);
+                const riskLevel = status === 'Critical' ? 'danger' : status === 'Warning' ? 'warning' : 'healthy';
                 return (
                   <div
                     key={m.machine_id}
@@ -439,18 +465,19 @@ export default function App() {
                     <div className="machine-item-top">
                       <div className="machine-name-group">
                         <Cpu size={14} className={riskLevel === 'danger' ? 'text-danger' : riskLevel === 'warning' ? 'text-warning' : 'text-success'} />
-                        <span className="machine-name">{m.machine_name}</span>
+                        <span className="machine-name">{getMachineName(m.machine_id)}</span>
                       </div>
                       <span className={`machine-prob-badge ${riskLevel}`}>
-                        {m.status}
+                        {status}
                       </span>
                     </div>
 
-                    <div className="machine-metrics-row">
-                      <span>T: {m.temperature.toFixed(1)}°C</span>
-                      <span>P: {m.pressure.toFixed(0)} PSI</span>
-                      <span>V: {m.vibration.toFixed(1)}m/s²</span>
-                      <span>RPM: {m.rpm}</span>
+                    <div className="machine-metrics-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 8px', fontSize: '10px', marginTop: '4px' }}>
+                      <span>Air Temp: {m.air_temperature.toFixed(1)}°C</span>
+                      <span>Proc Temp: {m.process_temperature.toFixed(1)}°C</span>
+                      <span>Speed: {m.rotational_speed} RPM</span>
+                      <span>Torque: {m.torque.toFixed(1)} Nm</span>
+                      <span style={{ gridColumn: 'span 2' }}>Tool Wear: {m.tool_wear.toFixed(1)} min</span>
                     </div>
                   </div>
                 );
@@ -505,14 +532,16 @@ export default function App() {
             <div className="glass-card chart-card">
               <div className="chart-header">
                 <h3 style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Sensor History</h3>
-                <div className="chart-tabs">
-                  <button className={`chart-tab ${activeTab === 'temperature' ? 'active' : ''}`} onClick={() => setActiveTab('temperature')}>Temp</button>
-                  <button className={`chart-tab ${activeTab === 'vibration' ? 'active' : ''}`} onClick={() => setActiveTab('vibration')}>Vibr</button>
-                  <button className={`chart-tab ${activeTab === 'pressure' ? 'active' : ''}`} onClick={() => setActiveTab('pressure')}>Pres</button>
+                <div className="chart-tabs" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  <button className={`chart-tab ${activeTab === 'air_temperature' ? 'active' : ''}`} onClick={() => setActiveTab('air_temperature')}>Air Temp</button>
+                  <button className={`chart-tab ${activeTab === 'process_temperature' ? 'active' : ''}`} onClick={() => setActiveTab('process_temperature')}>Proc Temp</button>
+                  <button className={`chart-tab ${activeTab === 'rotational_speed' ? 'active' : ''}`} onClick={() => setActiveTab('rotational_speed')}>Speed</button>
+                  <button className={`chart-tab ${activeTab === 'torque' ? 'active' : ''}`} onClick={() => setActiveTab('torque')}>Torque</button>
+                  <button className={`chart-tab ${activeTab === 'tool_wear' ? 'active' : ''}`} onClick={() => setActiveTab('tool_wear')}>Tool Wear</button>
                 </div>
               </div>
 
-              <div className="chart-body">
+              <div className="chart-body" style={{ marginTop: '10px' }}>
                 {detailLoading ? (
                   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><div className="spinner"></div></div>
                 ) : detail && detail.sensor_history && detail.sensor_history.length > 0 ? (
@@ -536,8 +565,8 @@ export default function App() {
                         key={i}
                         cx={p.x}
                         cy={p.y}
-                        r={activeTab === 'vibration' && detail.sensor_history[i][activeTab] > 5 ? 5 : 3.5}
-                        fill={activeTab === 'vibration' && detail.sensor_history[i][activeTab] > 5 ? 'var(--danger)' : 'var(--primary)'}
+                        r={isPointAnomaly(activeTab, detail.sensor_history[i][activeTab]) ? 5 : 3.5}
+                        fill={isPointAnomaly(activeTab, detail.sensor_history[i][activeTab]) ? 'var(--danger)' : 'var(--primary)'}
                         stroke="#070a13"
                         strokeWidth="1.5"
                         style={{ cursor: 'pointer' }}
@@ -670,7 +699,7 @@ export default function App() {
         ) : (
           <div className="predictions-grid">
             {predictions.map((p) => {
-              const machineName = machines.find(m => m.machine_id === p.machine_id)?.machine_name || `Machine ${p.machine_id}`;
+              const machineName = getMachineName(p.machine_id);
               const prob = p.failure_probability;
               const riskClass = getRiskClass(prob);
               
@@ -731,7 +760,7 @@ export default function App() {
         ) : (
           <div className="recommendations-grid">
             {recommendations.map((r) => {
-              const machineName = machines.find(m => m.machine_id === r.machine_id)?.machine_name || `Machine ${r.machine_id}`;
+              const machineName = getMachineName(r.machine_id);
               return (
                 <div key={r.machine_id} className="glass-card rec-card">
                   <div className="rec-title-row">
@@ -830,10 +859,11 @@ export default function App() {
   // 5. Analytics View
   const renderAnalyticsPage = () => {
     const totalM = machines.length || 1;
-    const avgTemp = (machines.reduce((sum, m) => sum + m.temperature, 0) / totalM).toFixed(1);
-    const avgPres = (machines.reduce((sum, m) => sum + m.pressure, 0) / totalM).toFixed(0);
-    const avgVibr = (machines.reduce((sum, m) => sum + m.vibration, 0) / totalM).toFixed(2);
-    const avgRpm = (machines.reduce((sum, m) => sum + m.rpm, 0) / totalM).toFixed(0);
+    const avgAirTemp = (machines.reduce((sum, m) => sum + (m.air_temperature || 0), 0) / totalM).toFixed(1);
+    const avgProcTemp = (machines.reduce((sum, m) => sum + (m.process_temperature || 0), 0) / totalM).toFixed(1);
+    const avgSpeed = (machines.reduce((sum, m) => sum + (m.rotational_speed || 0), 0) / totalM).toFixed(0);
+    const avgTorque = (machines.reduce((sum, m) => sum + (m.torque || 0), 0) / totalM).toFixed(1);
+    const avgToolWear = (machines.reduce((sum, m) => sum + (m.tool_wear || 0), 0) / totalM).toFixed(1);
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -882,22 +912,26 @@ export default function App() {
           {/* Plant Telemetry Averages */}
           <div className="glass-card">
             <h3 className="card-title">Plant Telemetry Averages</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px', marginTop: '10px' }}>
               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>AVG TEMPERATURE</span>
-                <div style={{ fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>{avgTemp}°C</div>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>AIR TEMPERATURE (AVG)</span>
+                <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgAirTemp}°C</div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>AVG PRESSURE</span>
-                <div style={{ fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>{avgPres} PSI</div>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>PROCESS TEMPERATURE (AVG)</span>
+                <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgProcTemp}°C</div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>AVG VIBRATION</span>
-                <div style={{ fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>{avgVibr} m/s²</div>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>ROTATIONAL SPEED (AVG)</span>
+                <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgSpeed} RPM</div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>AVG ROTATIONAL SPEED</span>
-                <div style={{ fontSize: '20px', fontWeight: 800, marginTop: '4px' }}>{avgRpm} RPM</div>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>TORQUE (AVG)</span>
+                <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgTorque} Nm</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)', gridColumn: 'span 2' }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>TOOL WEAR (AVG)</span>
+                <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgToolWear} min</div>
               </div>
             </div>
           </div>
@@ -912,27 +946,29 @@ export default function App() {
                 <tr>
                   <th>Machine ID</th>
                   <th>Name</th>
-                  <th>Vitals Status</th>
-                  <th>Temperature</th>
-                  <th>Pressure</th>
-                  <th>Vibration</th>
+                  <th>Status</th>
+                  <th>Air Temp</th>
+                  <th>Proc Temp</th>
                   <th>Speed</th>
+                  <th>Torque</th>
+                  <th>Tool Wear</th>
                 </tr>
               </thead>
               <tbody>
                 {machines.map((m) => (
                   <tr key={m.machine_id}>
                     <td><strong>{m.machine_id}</strong></td>
-                    <td>{m.machine_name}</td>
+                    <td>{getMachineName(m.machine_id)}</td>
                     <td>
-                      <span className={`machine-prob-badge ${m.status === 'Critical' ? 'danger' : m.status === 'Warning' ? 'warning' : 'healthy'}`}>
-                        {m.status}
+                      <span className={`machine-prob-badge ${getMachineStatus(m.failure_probability) === 'Critical' ? 'danger' : getMachineStatus(m.failure_probability) === 'Warning' ? 'warning' : 'healthy'}`}>
+                        {getMachineStatus(m.failure_probability)}
                       </span>
                     </td>
-                    <td>{m.temperature.toFixed(1)}°C</td>
-                    <td>{m.pressure.toFixed(0)} PSI</td>
-                    <td>{m.vibration.toFixed(2)} m/s²</td>
-                    <td>{m.rpm} RPM</td>
+                    <td>{m.air_temperature.toFixed(1)}°C</td>
+                    <td>{m.process_temperature.toFixed(1)}°C</td>
+                    <td>{m.rotational_speed} RPM</td>
+                    <td>{m.torque.toFixed(1)} Nm</td>
+                    <td>{m.tool_wear.toFixed(1)} min</td>
                   </tr>
                 ))}
               </tbody>
@@ -1017,7 +1053,7 @@ export default function App() {
               ) : (
                 searchResults.docs.map((doc, idx) => (
                   <div key={doc.id || idx} className="search-result-item">
-                    <div style={{ display: 'flex', justifycontent: 'space-between', fontSize: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                       <strong style={{ color: 'var(--primary)' }}>Machine-{doc.machine_id}</strong>
                       <span style={{ color: 'var(--text-muted)' }}>{new Date(doc.date).toLocaleDateString()}</span>
                     </div>

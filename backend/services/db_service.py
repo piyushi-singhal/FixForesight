@@ -6,24 +6,45 @@ def get_all_machines():
     result = []
     for m_id, m in db.machines.items():
         hist = db.sensor_history.get(m_id, [])
-        last = hist[-1] if hist else {"temperature": 50.0, "vibration": 1.0, "pressure": 100.0}
+        last = hist[-1] if hist else {
+            "air_temperature": 300.0,
+            "process_temperature": 305.0,
+            "rotational_speed": 1500,
+            "torque": 40.0,
+            "tool_wear": 100.0
+        }
         
-        t_fluc = max(30.0, min(140.0, last["temperature"] + random.uniform(-0.4, 0.4)))
-        v_fluc = max(0.1, min(25.0, last["vibration"] + random.uniform(-0.08, 0.08)))
-        p_fluc = max(10.0, min(250.0, last["pressure"] + random.uniform(-0.5, 0.5)))
+        at_fluc = max(200.0, min(400.0, last["air_temperature"] + random.uniform(-0.3, 0.3)))
+        pt_fluc = max(200.0, min(400.0, last["process_temperature"] + random.uniform(-0.4, 0.4)))
+        speed_fluc = max(0, min(5000, int(last["rotational_speed"] + random.uniform(-15, 15))))
+        torque_fluc = max(0.0, min(150.0, last["torque"] + random.uniform(-0.5, 0.5)))
+        wear_fluc = max(0.0, min(500.0, last["tool_wear"] + random.uniform(0.01, 0.05)))
         
-        last["temperature"] = t_fluc
-        last["vibration"] = v_fluc
-        last["pressure"] = p_fluc
+        last["air_temperature"] = at_fluc
+        last["process_temperature"] = pt_fluc
+        last["rotational_speed"] = speed_fluc
+        last["torque"] = torque_fluc
+        last["tool_wear"] = wear_fluc
+        
+        # Look up mock predictions and recommendations
+        pred = db.predictions.get(m_id, {
+            "failure_probability": 5.0,
+            "predicted_failure": "Normal Operation"
+        })
+        rec = db.recommendations.get(m_id, {
+            "recommendation": "No active recommendations. Machine operation normal."
+        })
         
         result.append({
-            "machine_id": m["machine_id"],
-            "machine_name": m["machine_name"],
-            "status": m["status"],
-            "temperature": t_fluc,
-            "pressure": p_fluc,
-            "vibration": v_fluc,
-            "rpm": m["rpm"]
+            "machine_id": m_id,
+            "air_temperature": at_fluc,
+            "process_temperature": pt_fluc,
+            "rotational_speed": speed_fluc,
+            "torque": torque_fluc,
+            "tool_wear": wear_fluc,
+            "failure_probability": float(pred["failure_probability"]) / 100.0,
+            "predicted_failure": pred["predicted_failure"],
+            "recommendation": rec["recommendation"]
         })
     return result
 
