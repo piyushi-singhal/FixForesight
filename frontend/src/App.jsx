@@ -16,7 +16,8 @@ import {
   TrendingUp,
   Wifi,
   Wrench,
-  XCircle
+  XCircle,
+  ClipboardList
 } from 'lucide-react';
 import {
   fetchMachines,
@@ -28,7 +29,8 @@ import {
   setActiveMachineId,
   clearSearch,
   setQuery,
-  resetWorkOrderStatus
+  resetWorkOrderStatus,
+  fetchWorkOrders
 } from './store';
 
 import { getPredictions } from './services/predictionService';
@@ -54,6 +56,28 @@ export default function App() {
     if (failureProbability >= 0.3) return 'Warning';
     return 'Healthy';
   };
+
+  const getMachineModel = (id) => {
+    const models = {
+      'M101': 'M-450 Spindle',
+      'M102': 'H-200 Press',
+      'M103': 'IM-600 Molder',
+      'M104': 'RA-3 Axis Controller',
+      'M105': 'CC-800 Compressor'
+    };
+    return models[id] || 'N/A';
+  };
+
+  const getMachineLocation = (id) => {
+    const locations = {
+      'M101': 'Aisle 3, Bay A',
+      'M102': 'Aisle 1, Bay C',
+      'M103': 'Aisle 2, Bay B',
+      'M104': 'Assembly Line 4',
+      'M105': 'Utility Plant Room'
+    };
+    return locations[id] || 'N/A';
+  };
   
   // Redux Selectors
   const machines = useSelector((state) => state.machines.list);
@@ -69,13 +93,15 @@ export default function App() {
   const submittingWorkOrder = useSelector((state) => state.recommendation.submittingWorkOrder);
 
   const alerts = useSelector((state) => state.alerts.list);
+  const workOrders = useSelector((state) => state.workOrders.list);
+  const workOrdersLoading = useSelector((state) => state.workOrders.loading);
   
   const searchQuery = useSelector((state) => state.search.query);
   const searchResults = useSelector((state) => state.search.results);
   const searchLoading = useSelector((state) => state.search.loading);
 
   // Local State for Tabs / Navigation / Custom Page Data
-  const [activePage, setActivePage] = useState('dashboard'); // dashboard, machines, predictions, recommendations, analytics, search
+  const [activePage, setActivePage] = useState('dashboard'); // dashboard, machines, predictions, recommendations, work-orders, analytics, search
   const [activeTab, setActiveTab] = useState('air_temperature'); // air_temperature, process_temperature, rotational_speed, torque, tool_wear
   const [sysHealth, setSysHealth] = useState({ status: 'healthy', postgres: 'healthy', localstack: 'healthy', solr: 'healthy' });
   const [analytics, setAnalytics] = useState({ healthy: 60, warning: 40, critical: 0 });
@@ -93,6 +119,7 @@ export default function App() {
   useEffect(() => {
     dispatch(fetchMachines());
     dispatch(fetchAlerts());
+    dispatch(fetchWorkOrders());
     checkHealth();
     loadPredictions();
     loadAllRecommendations();
@@ -100,6 +127,7 @@ export default function App() {
     const interval = setInterval(() => {
       dispatch(fetchMachines());
       dispatch(fetchAlerts());
+      dispatch(fetchWorkOrders());
       checkHealth();
     }, 3000);
 
@@ -120,10 +148,12 @@ export default function App() {
       loadPredictions();
     } else if (activePage === 'recommendations') {
       loadAllRecommendations();
+    } else if (activePage === 'work-orders') {
+      dispatch(fetchWorkOrders());
     } else if (activePage === 'analytics') {
       checkHealth();
     }
-  }, [activePage]);
+  }, [activePage, dispatch]);
 
   // Authorization feedback
   useEffect(() => {
@@ -131,6 +161,7 @@ export default function App() {
       alert("Work Order generated successfully!");
       dispatch(resetWorkOrderStatus());
       dispatch(fetchMachines());
+      dispatch(fetchWorkOrders());
       if (activeId) {
         dispatch(fetchMachineRisk(activeId));
         dispatch(fetchMachineRecommendations(activeId));
@@ -473,193 +504,97 @@ export default function App() {
   // 2. Machines Directory & Analytics View
   const renderMachinesPage = () => {
     return (
-      <div className="machines-layout">
-        {/* Machine directory list */}
-        <aside className="sidebar-panel">
-          <div className="panel-header">
-            <h2 className="panel-title">Monitored Units</h2>
-            <span className="status-badge" style={{ padding: '2px 8px', fontSize: '10px' }}>
-              <span className="status-indicator active"></span>
-              IoT Feed
-            </span>
-          </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+        <div>
+          <h2>Monitored Assets Directory</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>
+            Fleet-wide hardware inventory, models, deployment locations, and operational statuses.
+          </p>
+        </div>
 
-          <div className="machine-list">
-            {machinesLoading && machines.length === 0 ? (
-              <div style={{ display: 'flex', justifyContent: 'center', margin: '40px 0' }}><div className="spinner"></div></div>
-            ) : (
-              machines.map((m) => {
-                const status = getMachineStatus(m.failure_probability);
-                const riskLevel = status === 'Critical' ? 'danger' : status === 'Warning' ? 'warning' : 'healthy';
-                return (
-                  <div
-                    key={m.machine_id}
-                    className={`machine-item ${activeId === m.machine_id ? 'active' : ''}`}
-                    onClick={() => handleMachineSelect(m.machine_id)}
-                  >
-                    <div className="machine-item-top">
-                      <div className="machine-name-group">
-                        <Cpu size={14} className={riskLevel === 'danger' ? 'text-danger' : riskLevel === 'warning' ? 'text-warning' : 'text-success'} />
-                        <span className="machine-name">{getMachineName(m.machine_id)}</span>
-                      </div>
-                      <span className={`machine-prob-badge ${riskLevel}`}>
-                        {status}
-                      </span>
-                    </div>
-
-                    <div className="machine-metrics-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 8px', fontSize: '10px', marginTop: '4px' }}>
-                      <span>Air Temp: {m.air_temperature.toFixed(1)}°C</span>
-                      <span>Proc Temp: {m.process_temperature.toFixed(1)}°C</span>
-                      <span>Speed: {m.rotational_speed} RPM</span>
-                      <span>Torque: {m.torque.toFixed(1)} Nm</span>
-                      <span style={{ gridColumn: 'span 2' }}>Tool Wear: {m.tool_wear.toFixed(1)} min</span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </aside>
-
-        {/* Machine Details panel */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', overflowY: 'auto' }}>
-          
-          <div className="machine-detail-grid">
-            
-            {/* Risk Gauge */}
-            <div className="glass-card risk-level-card">
-              <h3 style={{ fontSize: '14px', alignSelf: 'flex-start', color: 'var(--text-secondary)' }}>Failure Risk Matrix</h3>
-              
-              <div className="risk-gauge-container">
-                <svg className="risk-gauge-svg">
-                  <circle cx="80" cy="80" r="70" className="gauge-bg" />
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="70"
-                    className={`gauge-fill ${getRiskClass(currentRisk)}`}
-                    strokeDasharray={`${strokeDash} 439.6`}
-                  />
-                </svg>
-                <div className="gauge-text">
-                  <span className="gauge-val" style={{ color: currentRisk >= 70 ? 'var(--danger)' : currentRisk >= 30 ? 'var(--warning)' : 'var(--success)' }}>
-                    {currentRisk.toFixed(0)}%
-                  </span>
-                  <span className="gauge-lbl">Risk</span>
-                </div>
-              </div>
-
-              <div style={{ marginTop: '10px', textAlign: 'center' }}>
-                <h4 style={{ fontSize: '16px', fontWeight: 700 }}>
-                  {detail && detail.prediction ? detail.prediction.predicted_failure : 'Normal Operation'}
-                </h4>
-                {detail && detail.prediction && detail.prediction.time_to_failure !== 'N/A' ? (
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center', marginTop: '4px' }}>
-                    <Clock size={12} className="text-warning" /> Est. failure: <strong>{detail.prediction.time_to_failure}</strong>
-                  </p>
+        {/* Master Machines Table */}
+        <div className="glass-card">
+          <h3 className="card-title">Assets Master Directory</h3>
+          <div className="table-responsive" style={{ overflowX: 'auto', marginTop: '10px' }}>
+            <table className="parts-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr>
+                  <th>Machine ID</th>
+                  <th>Machine Name</th>
+                  <th>Model</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {machinesLoading && machines.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>
+                      <div className="spinner" style={{ margin: '0 auto' }}></div>
+                    </td>
+                  </tr>
                 ) : (
-                  <p style={{ fontSize: '12px', color: 'var(--success)', marginTop: '4px' }}>Vitals operating in healthy ranges</p>
+                  machines.map((m) => {
+                    const status = getMachineStatus(m.failure_probability);
+                    const riskLevel = status === 'Critical' ? 'danger' : status === 'Warning' ? 'warning' : 'healthy';
+                    const isActive = m.machine_id === activeId;
+                    
+                    return (
+                      <tr 
+                        key={m.machine_id}
+                        onClick={() => handleMachineSelect(m.machine_id)}
+                        className={`clickable-row ${isActive ? 'active-row' : ''}`}
+                        style={{ 
+                          cursor: 'pointer',
+                          background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent',
+                          transition: 'background 0.2s'
+                        }}
+                      >
+                        <td><strong>{m.machine_id}</strong></td>
+                        <td>{getMachineName(m.machine_id)}</td>
+                        <td>{getMachineModel(m.machine_id)}</td>
+                        <td>{getMachineLocation(m.machine_id)}</td>
+                        <td>
+                          <span className={`machine-prob-badge ${riskLevel}`}>
+                            {status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
-              </div>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Selected Machine Detail Panel (rendered only if a machine is selected) */}
+        {activeId && (
+          <div>
+            <div style={{ marginBottom: '14px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700 }}>Telemetry Vitals & Mitigation: {getMachineName(activeId)}</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>
+                Operational sensors trend logs, predicted failure models, and parts logistics for Unit {activeId}.
+              </p>
             </div>
 
-            {/* Sparkline chart */}
-            <div className="glass-card chart-card">
-              <div className="chart-header">
-                <h3 style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Sensor History</h3>
-                <div className="chart-tabs" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                  <button className={`chart-tab ${activeTab === 'air_temperature' ? 'active' : ''}`} onClick={() => setActiveTab('air_temperature')}>Air Temp</button>
-                  <button className={`chart-tab ${activeTab === 'process_temperature' ? 'active' : ''}`} onClick={() => setActiveTab('process_temperature')}>Proc Temp</button>
-                  <button className={`chart-tab ${activeTab === 'rotational_speed' ? 'active' : ''}`} onClick={() => setActiveTab('rotational_speed')}>Speed</button>
-                  <button className={`chart-tab ${activeTab === 'torque' ? 'active' : ''}`} onClick={() => setActiveTab('torque')}>Torque</button>
-                  <button className={`chart-tab ${activeTab === 'tool_wear' ? 'active' : ''}`} onClick={() => setActiveTab('tool_wear')}>Tool Wear</button>
-                </div>
-              </div>
-
-              <div className="chart-body" style={{ marginTop: '10px' }}>
-                {detailLoading ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><div className="spinner"></div></div>
-                ) : detail && detail.sensor_history && detail.sensor_history.length > 0 ? (
-                  <svg viewBox="0 0 500 200" className="sparkline-svg">
-                    <defs>
-                      <linearGradient id="chart-gradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.25" />
-                        <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-
-                    {[40, 80, 120, 160].map((y, idx) => (
-                      <line key={idx} x1="20" y1={y} x2="480" y2={y} className="sparkline-grid-line" />
-                    ))}
-
-                    <path d={trendData.area} className="sparkline-area" />
-                    <path d={trendData.path} className="sparkline-path" />
-
-                    {trendData.points.map((p, i) => (
-                      <circle
-                        key={i}
-                        cx={p.x}
-                        cy={p.y}
-                        r={isPointAnomaly(activeTab, detail.sensor_history[i][activeTab]) ? 5 : 3.5}
-                        fill={isPointAnomaly(activeTab, detail.sensor_history[i][activeTab]) ? 'var(--danger)' : 'var(--primary)'}
-                        stroke="#070a13"
-                        strokeWidth="1.5"
-                        style={{ cursor: 'pointer' }}
-                        title={`Val: ${detail.sensor_history[i][activeTab].toFixed(1)}`}
-                      />
-                    ))}
-
-                    <text x="20" y="195" fill="var(--text-muted)" fontSize="9">Time →</text>
-                    <text x="440" y="15" fill="var(--text-muted)" fontSize="9" textAnchor="end">
-                      Max: {trendData.maxVal ? trendData.maxVal.toFixed(1) : ''}
-                    </text>
-                  </svg>
-                ) : (
-                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-muted)' }}>No historical data logged.</div>
-                )}
-              </div>
-            </div>
-
-          </div>
-
-          {/* Recommendations sheet */}
-          <div className="glass-card rec-card">
-            {recLoading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}><div className="spinner"></div></div>
-            ) : rec && rec.has_recommendation ? (
-              <>
-                <div className="rec-title-row">
-                  <div>
-                    <h3 style={{ fontSize: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Wrench size={18} className="text-primary" /> Recommended Mitigation Plan
-                    </h3>
-                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      Generated: {new Date(rec.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                  <span className={`rec-action-badge ${rec.priority.toLowerCase()}`}>
-                    <ShieldAlert size={14} />
-                    {rec.priority} Priority (Conf: {rec.confidence}%)
-                  </span>
-                </div>
-
-                <div className="rec-action-box">
-                  <h4 style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>Action Items</h4>
-                  <p style={{ fontSize: '13px', marginTop: '6px', lineHeight: '1.5' }}>{rec.recommendation}</p>
-                </div>
-
-                <div>
-                  <h4 style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: '8px' }}>Required Spare Parts Checklist</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div className="machine-detail-grid">
+                
+                {/* Risk Gauge */}
+                <div className="glass-card risk-level-card">
+                  <h3 style={{ fontSize: '14px', alignSelf: 'flex-start', color: 'var(--text-secondary)' }}>Failure Risk Matrix</h3>
                   
-                  {rec.parts_status.length === 0 ? (
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>No spare parts required for this maintenance plan.</p>
-                  ) : (
-                    <table className="parts-table">
-                      <thead>
-                        <tr>
-                          <th>Part Name</th>
-                          <th>Needed</th>
-                          <th>Warehouse Stock</th>
+                  <div className="risk-gauge-container">
+                    <svg className="risk-gauge-svg">
+                      <circle cx="80" cy="80" r="70" className="gauge-bg" />
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="70"
+                        className={`gauge-fill ${getRiskClass(currentRisk)}`}
+                        strokeDasharray={`${strokeDash} 439.6`}
+                      />
                           <th>Status</th>
                           <th>Unit Cost</th>
                         </tr>
@@ -732,41 +667,49 @@ export default function App() {
         {predictionsLoading && predictions.length === 0 ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner"></div></div>
         ) : (
-          <div className="predictions-grid">
-            {predictions.map((p) => {
-              const machineName = getMachineName(p.machine_id);
-              const prob = p.failure_probability;
-              const riskClass = getRiskClass(prob);
-              
-              return (
-                <div key={p.machine_id} className="glass-card prediction-card">
-                  <div className="prediction-header">
-                    <span className="prediction-name">{machineName}</span>
-                    <span className={`machine-prob-badge ${riskClass}`}>{p.machine_id}</span>
-                  </div>
-                  
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Failure Risk Score:</span>
-                    <span style={{ fontWeight: 700, color: `var(--${riskClass})` }}>{prob}%</span>
-                  </div>
-                  
-                  <div className="prediction-val-bar">
-                    <div className={`prediction-val-fill ${riskClass}`} style={{ width: `${prob}%` }}></div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', marginTop: '4px' }}>
-                    <div>
-                      <span style={{ color: 'var(--text-secondary)' }}>Forecasted Mode: </span>
-                      <strong style={{ color: prob >= 30 ? 'var(--warning)' : 'var(--text-primary)' }}>{p.predicted_failure}</strong>
-                    </div>
-                    <div>
-                      <span style={{ color: 'var(--text-secondary)' }}>Estimated Time: </span>
-                      <strong>{p.time_to_failure}</strong>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="glass-card">
+            <h3 className="card-title">Failure Prediction Index</h3>
+            <div className="table-responsive" style={{ overflowX: 'auto', marginTop: '10px' }}>
+              <table className="parts-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr>
+                    <th>Machine ID</th>
+                    <th>Air Temp</th>
+                    <th>Process Temp</th>
+                    <th>Rotational Speed</th>
+                    <th>Torque</th>
+                    <th>Tool Wear</th>
+                    <th>Failure Probability</th>
+                    <th>Predicted Failure</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {predictions.map((p) => {
+                    const probPct = Math.round(p.failure_probability * 100);
+                    const riskClass = getRiskClass(probPct);
+                    
+                    return (
+                      <tr key={p.machine_id}>
+                        <td><strong>{p.machine_id}</strong></td>
+                        <td>{p.air_temperature ? `${p.air_temperature.toFixed(1)}°C` : 'N/A'}</td>
+                        <td>{p.process_temperature ? `${p.process_temperature.toFixed(1)}°C` : 'N/A'}</td>
+                        <td>{p.rotational_speed ? `${p.rotational_speed} RPM` : 'N/A'}</td>
+                        <td>{p.torque ? `${p.torque.toFixed(1)} Nm` : 'N/A'}</td>
+                        <td>{p.tool_wear ? `${p.tool_wear.toFixed(1)} min` : 'N/A'}</td>
+                        <td style={{ color: `var(--${riskClass})`, fontWeight: 700 }}>
+                          {probPct}%
+                        </td>
+                        <td>
+                          <span className={`machine-prob-badge ${riskClass}`}>
+                            {p.predicted_failure}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
@@ -793,105 +736,113 @@ export default function App() {
             <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No active prescriptive repair recommendations found.</p>
           </div>
         ) : (
-          <div className="recommendations-grid">
-            {recommendations.map((r) => {
-              const machineName = getMachineName(r.machine_id);
-              return (
-                <div key={r.machine_id} className="glass-card rec-card">
-                  <div className="rec-title-row">
-                    <div>
-                      <h3 style={{ fontSize: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Wrench size={16} className="text-primary" /> {machineName} Mitigation Plan
-                      </h3>
-                      <p style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        Generated: {new Date(r.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                    <span className={`rec-action-badge ${r.priority.toLowerCase()}`}>
-                      <ShieldAlert size={12} />
-                      {r.priority} Priority (Conf: {r.confidence}%)
-                    </span>
-                  </div>
-
-                  <div className="rec-action-box">
-                    <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Action Required</span>
-                    <p style={{ fontSize: '12px', marginTop: '4px', lineHeight: '1.5' }}>{r.recommendation}</p>
-                  </div>
-
-                  <div>
-                    <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Required Spare Parts Checklist</span>
-                    {r.parts_status.length === 0 ? (
-                      <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>No spare parts required for this maintenance plan.</p>
-                    ) : (
-                      <table className="parts-table" style={{ marginTop: '6px' }}>
-                        <thead>
-                          <tr>
-                            <th>Part Name</th>
-                            <th>Needed</th>
-                            <th>Warehouse Stock</th>
-                            <th>Status</th>
-                            <th>Unit Cost</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {r.parts_status.map((p, idx) => (
-                            <tr key={idx}>
-                              <td>{p.part_name}</td>
-                              <td>{p.quantity_required}</td>
-                              <td>{p.stock_available}</td>
-                              <td>
-                                <span className={`part-status-badge ${p.status}`}>
-                                  {p.status}
-                                </span>
-                              </td>
-                              <td>${p.unit_cost.toFixed(2)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid var(--border-glass)' }}>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      Estimated Duration: <strong>{r.estimated_duration_hours} hours</strong>
-                    </span>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                      {r.parts_missing && (
-                        <span style={{ fontSize: '11px', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <AlertTriangle size={12} /> Out-of-stock parts detected
+          <div className="glass-card">
+            <h3 className="card-title">Mitigation Recommendations Directory</h3>
+            <div className="table-responsive" style={{ overflowX: 'auto', marginTop: '10px' }}>
+              <table className="parts-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr>
+                    <th>Machine ID</th>
+                    <th>Recommendation</th>
+                    <th>Priority</th>
+                    <th>Generated Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recommendations.map((r) => (
+                    <tr key={r.machine_id}>
+                      <td><strong>{r.machine_id}</strong></td>
+                      <td>{r.recommendation}</td>
+                      <td>
+                        <span className={`machine-prob-badge ${r.priority.toLowerCase() === 'critical' ? 'danger' : r.priority.toLowerCase() === 'high' ? 'warning' : 'healthy'}`}>
+                          {r.priority}
                         </span>
-                      )}
-                      <button
-                        className="btn-primary"
-                        onClick={() => {
-                          dispatch(createWorkOrder({
-                            machineId: r.machine_id,
-                            priority: r.priority,
-                            actionRequired: r.recommendation
-                          })).then(() => {
-                            loadAllRecommendations();
-                            dispatch(fetchMachines());
-                          });
-                        }}
-                        disabled={submittingWorkOrder}
-                      >
-                        <CheckCircle2 size={14} />
-                        {submittingWorkOrder ? 'Scheduling...' : 'Authorize Work Order'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                      </td>
+                      <td>{new Date(r.created_at).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
     );
   };
 
-  // 5. Analytics View
+  // 5. Work Orders View
+  const renderWorkOrdersPage = () => {
+    const getAssignedTechnician = (woId) => {
+      const techs = [
+        "Marcus Vance",
+        "Dave Miller",
+        "Elena Rostova",
+        "Carlos Mendez",
+        "Sarah Jenkins"
+      ];
+      return techs[woId % techs.length];
+    };
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div>
+          <h2>Work Orders Tracking Directory</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>
+            Authorized maintenance schedules, technician assignments, and job completion statuses.
+          </p>
+        </div>
+
+        {workOrdersLoading && workOrders.length === 0 ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}><div className="spinner"></div></div>
+        ) : workOrders.length === 0 ? (
+          <div className="glass-card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
+            <CheckCircle2 size={36} className="text-success" style={{ marginBottom: '12px' }} />
+            <h3>No Active Work Orders</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>There are currently no scheduled corrective work orders in queue.</p>
+          </div>
+        ) : (
+          <div className="glass-card">
+            <h3 className="card-title">Mitigation Tasks Ledger</h3>
+            <div className="table-responsive" style={{ overflowX: 'auto', marginTop: '10px' }}>
+              <table className="parts-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr>
+                    <th>Work Order ID</th>
+                    <th>Machine ID</th>
+                    <th>Assigned Technician</th>
+                    <th>Status</th>
+                    <th>Created At</th>
+                    <th>Completed At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {workOrders.map((wo) => {
+                    const statusClass = wo.status === 'completed' ? 'healthy' : wo.status === 'in_progress' ? 'warning' : 'danger';
+                    return (
+                      <tr key={wo.id}>
+                        <td><strong>WO-{String(wo.id).padStart(3, '0')}</strong></td>
+                        <td>{wo.machine_id} ({getMachineName(wo.machine_id)})</td>
+                        <td>{getAssignedTechnician(wo.id)}</td>
+                        <td>
+                          <span className={`machine-prob-badge ${statusClass}`}>
+                            {wo.status.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td>{new Date(wo.created_at).toLocaleString()}</td>
+                        <td>{wo.completed_at ? new Date(wo.completed_at).toLocaleString() : '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 6. Analytics View
   const renderAnalyticsPage = () => {
     const totalM = machines.length || 1;
     const avgAirTemp = (machines.reduce((sum, m) => sum + (m.air_temperature || 0), 0) / totalM).toFixed(1);
@@ -900,76 +851,159 @@ export default function App() {
     const avgTorque = (machines.reduce((sum, m) => sum + (m.torque || 0), 0) / totalM).toFixed(1);
     const avgToolWear = (machines.reduce((sum, m) => sum + (m.tool_wear || 0), 0) / totalM).toFixed(1);
 
+    // Calculations for charts
+    const probDistribution = {
+      '0-20%': 0,
+      '20-40%': 0,
+      '40-60%': 0,
+      '60-80%': 0,
+      '80-100%': 0
+    };
+    const statusCounts = {
+      'Healthy': 0,
+      'Warning': 0,
+      'Critical': 0
+    };
+    const priorityCounts = {
+      'Low': 0,
+      'Medium': 0,
+      'High': 0,
+      'Critical': 0
+    };
+
+    machines.forEach(m => {
+      const prob = m.failure_probability * 100;
+      if (prob < 20) probDistribution['0-20%']++;
+      else if (prob < 40) probDistribution['20-40%']++;
+      else if (prob < 60) probDistribution['40-60%']++;
+      else if (prob < 80) probDistribution['60-80%']++;
+      else probDistribution['80-100%']++;
+
+      const status = getMachineStatus(m.failure_probability);
+      if (statusCounts[status] !== undefined) statusCounts[status]++;
+    });
+
+    recommendations.forEach(r => {
+      const prio = r.priority || 'Low';
+      if (priorityCounts[prio] !== undefined) priorityCounts[prio]++;
+    });
+
+    // Helper for rendering a progress bar row
+    const renderBarRow = (label, count, total, colorClass, barColor) => {
+      const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+      return (
+        <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ display: 'flex', justifycontent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)' }}>
+            <span>{label}</span>
+            <strong>{count} unit(s) ({pct}%)</strong>
+          </div>
+          <div className="prediction-val-bar" style={{ height: '6px' }}>
+            <div 
+              className="prediction-val-fill" 
+              style={{ 
+                width: `${pct}%`, 
+                background: barColor || `var(--${colorClass})`,
+                height: '100%',
+                borderRadius: '3px'
+              }}
+            ></div>
+          </div>
+        </div>
+      );
+    };
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div>
           <h2>System Performance Analytics</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>
-            Comprehensive analytics showing plant health status and telemetry averages.
+            Fleet-wide diagnostic analytics, operational distributions, and hardware failure statistics.
           </p>
         </div>
 
-        <div className="analytics-grid">
-          {/* Health Distribution */}
-          <div className="glass-card">
-            <h3 className="card-title">Health Distribution</h3>
-            <div className="analytics-bars-container">
-              <div className="analytics-bar-row">
-                <div className="analytics-bar-lbl">
-                  <span>Healthy</span>
-                  <strong>{analytics.healthy}%</strong>
-                </div>
-                <div className="analytics-bar">
-                  <div className="analytics-bar-fill healthy" style={{ width: `${analytics.healthy}%` }}></div>
-                </div>
-              </div>
-              <div className="analytics-bar-row">
-                <div className="analytics-bar-lbl">
-                  <span>Warning Status</span>
-                  <strong>{analytics.warning}%</strong>
-                </div>
-                <div className="analytics-bar">
-                  <div className="analytics-bar-fill warning" style={{ width: `${analytics.warning}%` }}></div>
-                </div>
-              </div>
-              <div className="analytics-bar-row">
-                <div className="analytics-bar-lbl">
-                  <span>Critical Risk</span>
-                  <strong>{analytics.critical}%</strong>
-                </div>
-                <div className="analytics-bar">
-                  <div className="analytics-bar-fill critical" style={{ width: `${analytics.critical}%` }}></div>
-                </div>
-              </div>
+        {/* Telemetry Averages Row */}
+        <div className="glass-card">
+          <h3 className="card-title">Plant Telemetry Averages</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px', marginTop: '10px' }}>
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>AIR TEMPERATURE (AVG)</span>
+              <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgAirTemp}°C</div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>PROCESS TEMPERATURE (AVG)</span>
+              <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgProcTemp}°C</div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>ROTATIONAL SPEED (AVG)</span>
+              <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgSpeed} RPM</div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>TORQUE (AVG)</span>
+              <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgTorque} Nm</div>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)', gridColumn: 'span 2' }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>TOOL WEAR (AVG)</span>
+              <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgToolWear} min</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts Section */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          
+          {/* Failure Probability Distribution */}
+          <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div>
+              <h3 className="card-title">Failure Probability Distribution</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
+                Machines segmented by active risk percentage.
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {Object.entries(probDistribution).map(([bucket, count]) => 
+                renderBarRow(
+                  bucket, 
+                  count, 
+                  machines.length, 
+                  bucket === '80-100%' ? 'danger' : bucket === '60-80%' ? 'warning' : 'primary',
+                  bucket === '80-100%' ? 'var(--danger)' : bucket === '60-80%' ? 'var(--warning)' : 'var(--primary)'
+                )
+              )}
             </div>
           </div>
 
-          {/* Plant Telemetry Averages */}
-          <div className="glass-card">
-            <h3 className="card-title">Plant Telemetry Averages</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '16px', marginTop: '10px' }}>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>AIR TEMPERATURE (AVG)</span>
-                <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgAirTemp}°C</div>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>PROCESS TEMPERATURE (AVG)</span>
-                <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgProcTemp}°C</div>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>ROTATIONAL SPEED (AVG)</span>
-                <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgSpeed} RPM</div>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>TORQUE (AVG)</span>
-                <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgTorque} Nm</div>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)', gridColumn: 'span 2' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>TOOL WEAR (AVG)</span>
-                <div style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>{avgToolWear} min</div>
-              </div>
+          {/* Machine Status */}
+          <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div>
+              <h3 className="card-title">Machine Status Splits</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
+                Operational categorization count.
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {Object.entries(statusCounts).map(([status, count]) => {
+                const color = status === 'Critical' ? 'var(--danger)' : status === 'Warning' ? 'var(--warning)' : 'var(--success)';
+                return renderBarRow(status, count, machines.length, '', color);
+              })}
             </div>
           </div>
+
+          {/* Recommendation Priority */}
+          <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div>
+              <h3 className="card-title">Recommendation Priorities</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
+                Urgency breakdown of active recommendations.
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {Object.entries(priorityCounts).map(([priority, count]) => {
+                const color = priority === 'Critical' ? 'var(--danger)' : priority === 'High' ? 'var(--warning)' : priority === 'Medium' ? 'var(--primary)' : 'var(--text-muted)';
+                return renderBarRow(priority, count, recommendations.length, '', color);
+              })}
+            </div>
+          </div>
+
         </div>
 
         {/* Fleet Status Summary */}
@@ -1125,6 +1159,8 @@ export default function App() {
         return renderPredictionsPage();
       case 'recommendations':
         return renderRecommendationsPage();
+      case 'work-orders':
+        return renderWorkOrdersPage();
       case 'analytics':
         return renderAnalyticsPage();
       case 'search':
@@ -1201,6 +1237,10 @@ export default function App() {
               <div className={`nav-item ${activePage === 'recommendations' ? 'active' : ''}`} onClick={() => setActivePage('recommendations')}>
                 <Wrench size={18} />
                 <span>Recommendations</span>
+              </div>
+              <div className={`nav-item ${activePage === 'work-orders' ? 'active' : ''}`} onClick={() => setActivePage('work-orders')}>
+                <ClipboardList size={18} />
+                <span>Work Orders</span>
               </div>
               <div className={`nav-item ${activePage === 'analytics' ? 'active' : ''}`} onClick={() => setActivePage('analytics')}>
                 <TrendingUp size={18} />

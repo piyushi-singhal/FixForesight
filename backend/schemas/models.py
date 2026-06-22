@@ -14,6 +14,11 @@ class MachineResponse(BaseModel):
 
 class PredictionResponse(BaseModel):
     machine_id: str
+    air_temperature: float
+    process_temperature: float
+    rotational_speed: int
+    torque: float
+    tool_wear: float
     failure_probability: float
     predicted_failure: str
     time_to_failure: str
@@ -23,6 +28,16 @@ class RecommendationResponse(BaseModel):
     recommendation: str
     priority: str
     confidence: float
+    created_at: str
+
+class WorkOrderResponse(BaseModel):
+    id: int
+    machine_id: str
+    status: str
+    priority: str
+    action_required: str
+    created_at: str
+    completed_at: Optional[str] = None
 
 class AlertResponse(BaseModel):
     alert_id: int

@@ -49,7 +49,24 @@ def get_all_machines():
     return result
 
 def get_all_predictions():
-    return list(db.predictions.values())
+    machines = get_all_machines()
+    result = []
+    for m in machines:
+        pred = db.predictions.get(m["machine_id"], {
+            "time_to_failure": "N/A"
+        })
+        result.append({
+            "machine_id": m["machine_id"],
+            "air_temperature": m["air_temperature"],
+            "process_temperature": m["process_temperature"],
+            "rotational_speed": m["rotational_speed"],
+            "torque": m["torque"],
+            "tool_wear": m["tool_wear"],
+            "failure_probability": m["failure_probability"],
+            "predicted_failure": m["predicted_failure"],
+            "time_to_failure": pred.get("time_to_failure", "N/A")
+        })
+    return result
 
 def get_all_recommendations():
     recs = []
@@ -58,9 +75,13 @@ def get_all_recommendations():
             "machine_id": r["machine_id"],
             "recommendation": r["recommendation"],
             "priority": r["priority"],
-            "confidence": r["confidence"]
+            "confidence": r["confidence"],
+            "created_at": r["created_at"]
         })
     return recs
+
+def get_all_work_orders():
+    return db.work_orders
 
 def get_all_alerts():
     return sorted(db.alerts, key=lambda x: x["created_at"], reverse=True)

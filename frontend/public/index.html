@@ -579,6 +579,10 @@
         .part-badge.outofstock { background: var(--danger-glow); color: var(--danger); }
         .part-badge.unavailable { background: rgba(255,255,255,0.05); color: var(--text-muted); }
 
+        .clickable-row:hover {
+            background: rgba(255, 255, 255, 0.04) !important;
+        }
+
         .btn-action {
             background: var(--primary);
             color: #fff;
@@ -809,6 +813,10 @@
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
                             <span>Recommendations</span>
                         </div>
+                        <div id="nav-work-orders" class="nav-item" onclick="switchPage('work-orders')">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14h6M9 18h6"/></svg>
+                            <span>Work Orders</span>
+                        </div>
                         <div id="nav-analytics" class="nav-item" onclick="switchPage('analytics')">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                             <span>Analytics</span>
@@ -913,63 +921,87 @@
 
                 <!-- 2. Machines View -->
                 <div id="page-machines" class="page-view" style="display: none;">
-                    <div class="machines-layout">
-                        <!-- Machine directory sub-sidebar -->
-                        <aside class="sidebar-panel">
-                            <div class="panel-header">
-                                <h2 class="panel-title">Monitored Units</h2>
-                                <span class="status-badge" style="padding: 2px 8px; font-size: 9px; gap: 4px;">
-                                    <span class="glow-dot"></span> Live Vitals
-                                </span>
-                            </div>
-                            <div class="machine-list" id="machine-list-container">
-                                <!-- Loaded dynamically -->
-                            </div>
-                        </aside>
+                    <div style="display: flex; flex-direction: column; gap: 28px;">
+                        <div>
+                            <h2>Monitored Assets Directory</h2>
+                            <p style="color: var(--text-secondary); font-size: 13px; margin-top: 4px;">
+                                Fleet-wide hardware inventory, models, deployment locations, and operational statuses.
+                            </p>
+                        </div>
 
-                        <!-- Central telemetry pane -->
-                        <div style="display: flex; flex-direction: column; gap: 24px; overflow-y: auto;">
-                            <div class="machine-detail-grid">
-                                <!-- Gauge -->
-                                <div class="glass-card risk-level-card">
-                                    <h3 style="font-size: 11px; align-self: flex-start; color: var(--text-secondary); text-transform: uppercase; font-weight:700;">Failure risk percentage</h3>
-                                    <div class="risk-gauge-container">
-                                        <svg class="gauge-svg">
-                                            <circle cx="70" cy="70" r="60" class="gauge-bg" />
-                                            <circle cx="70" cy="70" r="60" id="gauge-fill" class="gauge-fill healthy" stroke-dasharray="0 376.8" />
-                                        </svg>
-                                        <div class="gauge-text">
-                                            <span class="gauge-val" id="gauge-val-text">--%</span>
-                                            <span class="gauge-lbl">Index</span>
-                                        </div>
-                                    </div>
-                                    <div style="margin-top:4px;">
-                                        <h4 id="gauge-failure-type" style="font-size:14px; font-weight:700; font-family:var(--font-heading)">Normal Operation</h4>
-                                        <p id="gauge-time-remaining" style="font-size:11px; color:var(--text-secondary); margin-top:2px; display:none;"></p>
-                                    </div>
-                                </div>
-
-                                <!-- Sparkline -->
-                                <div class="glass-card chart-card">
-                                    <div class="chart-header">
-                                        <h3 style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight:700;">Sensor Telemetry Sparkline</h3>
-                                        <div class="chart-tabs" style="display: flex; flex-wrap: wrap; gap: 4px;">
-                                            <button id="tab-air_temp" class="chart-tab active" onclick="setChartTab('air_temperature')">Air Temp</button>
-                                            <button id="tab-proc_temp" class="chart-tab" onclick="setChartTab('process_temperature')">Proc Temp</button>
-                                            <button id="tab-speed" class="chart-tab" onclick="setChartTab('rotational_speed')">Speed</button>
-                                            <button id="tab-torque" class="chart-tab" onclick="setChartTab('torque')">Torque</button>
-                                            <button id="tab-wear" class="chart-tab" onclick="setChartTab('tool_wear')">Tool Wear</button>
-                                        </div>
-                                    </div>
-                                    <div class="chart-body" id="chart-svg-container">
+                        <!-- Master Machines Table -->
+                        <div class="glass-card">
+                            <h3 class="card-title">Assets Master Directory</h3>
+                            <div style="overflow-x: auto; margin-top: 10px;">
+                                <table class="parts-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                    <thead>
+                                        <tr>
+                                            <th>Machine ID</th>
+                                            <th>Machine Name</th>
+                                            <th>Model</th>
+                                            <th>Location</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="machine-list-table-body">
                                         <!-- Loaded dynamically -->
-                                    </div>
-                                </div>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Selected Machine Detail Panel (visible when a machine is active) -->
+                        <div id="machine-detail-panel" style="display: none;">
+                            <div style="margin-bottom: 14px;">
+                                <h3 id="machine-detail-title" style="font-size: 18px; font-weight: 700;">Telemetry Vitals & Mitigation:</h3>
+                                <p style="color: var(--text-secondary); font-size: 12px;">
+                                    Operational sensors trend logs, predicted failure models, and parts logistics for Unit.
+                                </p>
                             </div>
 
-                            <!-- Recommendation box -->
-                            <div class="glass-card rec-card" id="recommendations-container">
-                                <!-- Loaded dynamically -->
+                            <div style="display: flex; flex-direction: column; gap: 24px;">
+                                <div class="machine-detail-grid">
+                                    <!-- Gauge -->
+                                    <div class="glass-card risk-level-card">
+                                        <h3 style="font-size: 14px; align-self: flex-start; color: var(--text-secondary);">Failure Risk Matrix</h3>
+                                        <div class="risk-gauge-container">
+                                            <svg class="gauge-svg">
+                                                <circle cx="70" cy="70" r="60" class="gauge-bg" />
+                                                <circle cx="70" cy="70" r="60" id="gauge-fill" class="gauge-fill healthy" stroke-dasharray="0 376.8" />
+                                            </svg>
+                                            <div class="gauge-text">
+                                                <span class="gauge-val" id="gauge-val-text">--%</span>
+                                                <span class="gauge-lbl">Index</span>
+                                            </div>
+                                        </div>
+                                        <div style="margin-top:4px;">
+                                            <h4 id="gauge-failure-type" style="font-size:14px; font-weight:700; font-family:var(--font-heading)">Normal Operation</h4>
+                                            <p id="gauge-time-remaining" style="font-size:11px; color:var(--text-secondary); margin-top:2px; display:none;"></p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Sparkline -->
+                                    <div class="glass-card chart-card">
+                                        <div class="chart-header">
+                                            <h3 style="font-size: 14px; color: var(--text-secondary);">Sensor Telemetry Sparkline</h3>
+                                            <div class="chart-tabs" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                                <button id="tab-air_temp" class="chart-tab active" onclick="setChartTab('air_temperature')">Air Temp</button>
+                                                <button id="tab-proc_temp" class="chart-tab" onclick="setChartTab('process_temperature')">Proc Temp</button>
+                                                <button id="tab-speed" class="chart-tab" onclick="setChartTab('rotational_speed')">Speed</button>
+                                                <button id="tab-torque" class="chart-tab" onclick="setChartTab('torque')">Torque</button>
+                                                <button id="tab-wear" class="chart-tab" onclick="setChartTab('tool_wear')">Tool Wear</button>
+                                            </div>
+                                        </div>
+                                        <div class="chart-body" id="chart-svg-container">
+                                            <!-- Loaded dynamically -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Recommendation box -->
+                                <div class="glass-card rec-card" id="recommendations-container">
+                                    <!-- Loaded dynamically -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -981,8 +1013,27 @@
                         <h2 style="font-size: 24px; font-weight:700;">Predictive Maintenance Analysis (TensorFlow)</h2>
                         <p style="color:var(--text-secondary); font-size:13px; margin-top:4px;">Continuous forecast analysis of industrial failure anomalies.</p>
                     </div>
-                    <div class="predictions-grid" id="predictions-list-container">
-                        <!-- Loaded dynamically -->
+                    <div class="glass-card">
+                        <h3 class="card-title">Failure Prediction Index</h3>
+                        <div style="overflow-x: auto; margin-top: 10px;">
+                            <table class="parts-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                <thead>
+                                    <tr>
+                                        <th>Machine ID</th>
+                                        <th>Air Temp</th>
+                                        <th>Process Temp</th>
+                                        <th>Rotational Speed</th>
+                                        <th>Torque</th>
+                                        <th>Tool Wear</th>
+                                        <th>Failure Probability</th>
+                                        <th>Predicted Failure</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="predictions-table-body">
+                                    <!-- Loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -992,8 +1043,51 @@
                         <h2 style="font-size: 24px; font-weight:700;">Prescriptive Action Plans & Parts Logistics</h2>
                         <p style="color:var(--text-secondary); font-size:13px; margin-top:4px;">Recommended mitigations cross-referenced with real-time stock inventory.</p>
                     </div>
-                    <div class="recommendations-grid" id="recommendations-list-container">
-                        <!-- Loaded dynamically -->
+                    <div class="glass-card">
+                        <h3 class="card-title">Mitigation Recommendations Directory</h3>
+                        <div style="overflow-x: auto; margin-top: 10px;">
+                            <table class="parts-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                <thead>
+                                    <tr>
+                                        <th>Machine ID</th>
+                                        <th>Recommendation</th>
+                                        <th>Priority</th>
+                                        <th>Generated Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recommendations-table-body">
+                                    <!-- Loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4.5 Work Orders View -->
+                <div id="page-work-orders" class="page-view" style="display: none;">
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="font-size: 24px; font-weight: 700;">Work Orders Tracking Directory</h2>
+                        <p style="color: var(--text-secondary); font-size: 13px; margin-top: 4px;">Authorized maintenance schedules, technician assignments, and job completion statuses.</p>
+                    </div>
+                    <div class="glass-card">
+                        <h3 class="card-title">Mitigation Tasks Ledger</h3>
+                        <div style="overflow-x: auto; margin-top: 10px;">
+                            <table class="parts-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                <thead>
+                                    <tr>
+                                        <th>Work Order ID</th>
+                                        <th>Machine ID</th>
+                                        <th>Assigned Technician</th>
+                                        <th>Status</th>
+                                        <th>Created At</th>
+                                        <th>Completed At</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="work-orders-table-body">
+                                    <!-- Loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
@@ -1001,47 +1095,75 @@
                 <div id="page-analytics" class="page-view" style="display: none;">
                     <div style="margin-bottom: 20px;">
                         <h2 style="font-size: 24px; font-weight:700;">System Performance Analytics</h2>
-                        <p style="color:var(--text-secondary); font-size:13px; margin-top:4px;">Statistical telemetry metrics and fleet distribution analysis.</p>
+                        <p style="color:var(--text-secondary); font-size:13px; margin-top:4px;">Fleet-wide diagnostic analytics, operational distributions, and hardware failure statistics.</p>
                     </div>
-                    <div class="analytics-grid">
-                        <!-- Health Distribution -->
-                        <div class="glass-card">
-                            <h3 class="card-title">Health Distribution Breakdown</h3>
-                            <div class="analytics-bars-container" id="analytics-health-bars">
+
+                    <!-- Telemetry Averages -->
+                    <div class="glass-card">
+                        <h3 class="card-title">Plant Telemetry Averages</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; margin-top: 10px;">
+                            <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
+                                <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">AIR TEMPERATURE (AVG)</span>
+                                <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-air-temp-val">--°C</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
+                                <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">PROCESS TEMPERATURE (AVG)</span>
+                                <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-proc-temp-val">--°C</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
+                                <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">ROTATIONAL SPEED (AVG)</span>
+                                <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-speed-val">-- RPM</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
+                                <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">TORQUE (AVG)</span>
+                                <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-torque-val">-- Nm</div>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass); grid-column: span 2;">
+                                <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">TOOL WEAR (AVG)</span>
+                                <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-wear-val">-- min</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Distributions Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-top: 28px;">
+                        <!-- Failure Probability Distribution -->
+                        <div class="glass-card" style="display: flex; flex-direction: column; gap: 14px;">
+                            <div>
+                                <h3 class="card-title">Failure Probability Distribution</h3>
+                                <p style="color: var(--text-secondary); font-size: 11px; margin-top: 2px;">Machines segmented by active risk percentage.</p>
+                            </div>
+                            <div class="analytics-bars-container" id="analytics-prob-bars" style="display: flex; flex-direction: column; gap: 10px;">
                                 <!-- Loaded dynamically -->
                             </div>
                         </div>
-                        <!-- Average telemetry cards -->
-                        <div class="glass-card">
-                            <h3 class="card-title">Fleet Telemetry Averages</h3>
-                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; margin-top: 10px;">
-                                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
-                                    <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">AIR TEMPERATURE (AVG)</span>
-                                    <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-air-temp-val">--°C</div>
-                                </div>
-                                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
-                                    <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">PROCESS TEMPERATURE (AVG)</span>
-                                    <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-proc-temp-val">--°C</div>
-                                </div>
-                                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
-                                    <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">ROTATIONAL SPEED (AVG)</span>
-                                    <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-speed-val">-- RPM</div>
-                                </div>
-                                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass);">
-                                    <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">TORQUE (AVG)</span>
-                                    <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-torque-val">-- Nm</div>
-                                </div>
-                                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 10px; border: 1px solid var(--border-glass); grid-column: span 2;">
-                                    <span style="font-size: 10px; color: var(--text-muted); font-weight: 600;">TOOL WEAR (AVG)</span>
-                                    <div style="font-size: 18px; font-weight: 800; margin-top: 4px;" id="avg-wear-val">-- min</div>
-                                </div>
+
+                        <!-- Machine Status -->
+                        <div class="glass-card" style="display: flex; flex-direction: column; gap: 14px;">
+                            <div>
+                                <h3 class="card-title">Machine Status Splits</h3>
+                                <p style="color: var(--text-secondary); font-size: 11px; margin-top: 2px;">Operational categorization count.</p>
+                            </div>
+                            <div class="analytics-bars-container" id="analytics-status-bars" style="display: flex; flex-direction: column; gap: 10px;">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Recommendation Priority -->
+                        <div class="glass-card" style="display: flex; flex-direction: column; gap: 14px;">
+                            <div>
+                                <h3 class="card-title">Recommendation Priorities</h3>
+                                <p style="color: var(--text-secondary); font-size: 11px; margin-top: 2px;">Urgency breakdown of active recommendations.</p>
+                            </div>
+                            <div class="analytics-bars-container" id="analytics-priority-bars" style="display: flex; flex-direction: column; gap: 10px;">
+                                <!-- Loaded dynamically -->
                             </div>
                         </div>
                     </div>
 
                     <!-- Fleet Index table -->
                     <div class="glass-card" style="margin-top: 28px;">
-                        <h3 class="card-title">Fleet Vitals Index</h3>
+                        <h3 class="card-title">Fleet Vitals Health Index</h3>
                         <div style="overflow-x: auto;">
                             <table class="parts-table">
                                 <thead>
@@ -1110,6 +1232,8 @@
             : window.location.origin;
         
         let machines = [];
+        let recommendations = [];
+        let workOrders = [];
 
         function getMachineName(id) {
             const names = {
@@ -1120,6 +1244,28 @@
                 'M105': 'Cooling Compressor'
             };
             return names[id] || `Machine ${id}`;
+        }
+
+        function getMachineModel(id) {
+            const models = {
+                'M101': 'M-450 Spindle',
+                'M102': 'H-200 Press',
+                'M103': 'IM-600 Molder',
+                'M104': 'RA-3 Axis Controller',
+                'M105': 'CC-800 Compressor'
+            };
+            return models[id] || 'N/A';
+        }
+
+        function getMachineLocation(id) {
+            const locations = {
+                'M101': 'Aisle 3, Bay A',
+                'M102': 'Aisle 1, Bay C',
+                'M103': 'Aisle 2, Bay B',
+                'M104': 'Assembly Line 4',
+                'M105': 'Utility Plant Room'
+            };
+            return locations[id] || 'N/A';
         }
 
         function getMachineStatus(failureProbability) {
@@ -1157,6 +1303,8 @@
                 loadPredictions();
             } else if (page === 'recommendations') {
                 loadGlobalRecommendations();
+            } else if (page === 'work-orders') {
+                loadWorkOrders();
             } else if (page === 'analytics') {
                 renderAnalyticsView();
             }
@@ -1267,11 +1415,23 @@
         // Select machine
         function selectMachine(id) {
             activeId = id;
-            document.querySelectorAll('.machine-item').forEach(el => {
-                el.classList.remove('active');
+            document.querySelectorAll('#machine-list-table-body tr').forEach(el => {
+                el.classList.remove('active-row');
+                el.style.background = 'transparent';
             });
-            const selectedItem = document.getElementById(`m-item-${id}`);
-            if (selectedItem) selectedItem.classList.add('active');
+            const selectedRow = document.getElementById(`m-row-${id}`);
+            if (selectedRow) {
+                selectedRow.classList.add('active-row');
+                selectedRow.style.background = 'rgba(255,255,255,0.06)';
+            }
+            
+            const detailPanel = document.getElementById('machine-detail-panel');
+            if (detailPanel) detailPanel.style.display = 'block';
+            
+            const detailTitle = document.getElementById('machine-detail-title');
+            if (detailTitle) {
+                detailTitle.textContent = `Telemetry Vitals & Mitigation: ${getMachineName(id)}`;
+            }
             
             loadDetails(id);
             loadRecommendations(id);
@@ -1393,6 +1553,8 @@
                         await loadRecommendations(machineId);
                     } else if (activePage === 'recommendations') {
                         await loadGlobalRecommendations();
+                    } else if (activePage === 'work-orders') {
+                        await loadWorkOrders();
                     }
                 }
             } catch(e) {
@@ -1403,145 +1565,146 @@
 
         // Load TensorFlow predictions
         async function loadPredictions() {
-            const container = document.getElementById('predictions-list-container');
-            container.innerHTML = '<div style="display:flex; justify-content:center; padding: 40px;"><div class="spinner"></div></div>';
+            const tbody = document.getElementById('predictions-table-body');
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 20px;"><div class="spinner" style="margin: 0 auto;"></div></td></tr>';
             
             try {
                 const r = await fetch(`${API_BASE}/predictions`);
                 if (r.ok) {
                     const data = await r.json();
-                    container.innerHTML = '';
+                    tbody.innerHTML = '';
                     data.forEach(p => {
-                        const machineName = getMachineName(p.machine_id);
-                        const risk = p.failure_probability;
-                        const riskClass = risk >= 70 ? 'danger' : risk >= 30 ? 'warning' : 'healthy';
-                        
-                        const card = document.createElement('div');
-                        card.className = 'glass-card prediction-card';
-                        card.innerHTML = `
-                            <div class="prediction-header">
-                                <span class="prediction-name">${machineName}</span>
-                                <span class="machine-prob-badge ${riskClass}">${p.machine_id}</span>
-                            </div>
-                            <div style="display:flex; justify-content:space-between; font-size:12px;">
-                                <span style="color:var(--text-secondary)">Failure Probability:</span>
-                                <strong style="color:var(--${riskClass})">${risk}%</strong>
-                            </div>
-                            <div class="prediction-val-bar">
-                                <div class="prediction-val-fill ${riskClass}" style="width: ${risk}%"></div>
-                            </div>
-                            <div style="display:flex; flex-direction:column; gap:4px; font-size:12px; margin-top:4px;">
-                                <div><span style="color:var(--text-secondary)">Forecast mode:</span> <strong>${p.predicted_failure}</strong></div>
-                                <div><span style="color:var(--text-secondary)">Est. remaining:</span> <strong>${p.time_to_failure}</strong></div>
-                            </div>
+                        const probPct = Math.round(p.failure_probability * 100);
+                        const riskClass = probPct >= 80 ? 'danger' : probPct >= 30 ? 'warning' : 'healthy';
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><strong>${p.machine_id}</strong></td>
+                            <td>${p.air_temperature ? `${p.air_temperature.toFixed(1)}°C` : 'N/A'}</td>
+                            <td>${p.process_temperature ? `${p.process_temperature.toFixed(1)}°C` : 'N/A'}</td>
+                            <td>${p.rotational_speed ? `${p.rotational_speed} RPM` : 'N/A'}</td>
+                            <td>${p.torque ? `${p.torque.toFixed(1)} Nm` : 'N/A'}</td>
+                            <td>${p.tool_wear ? `${p.tool_wear.toFixed(1)} min` : 'N/A'}</td>
+                            <td style="color: var(--${riskClass}); font-weight: 700;">
+                                ${probPct}%
+                            </td>
+                            <td>
+                                <span class="machine-prob-badge ${riskClass}">
+                                    ${p.predicted_failure}
+                                </span>
+                            </td>
                         `;
-                        container.appendChild(card);
+                        tbody.appendChild(tr);
                     });
                 }
             } catch(e) {
-                container.innerHTML = '<p style="color:var(--danger)">Failed to load predictions.</p>';
+                tbody.innerHTML = '<tr><td colspan="8" style="color:var(--danger); text-align:center; padding:20px;">Failed to load predictions.</td></tr>';
             }
         }
 
         // Load Global prescriptive recommendations
         async function loadGlobalRecommendations() {
-            const container = document.getElementById('recommendations-list-container');
-            container.innerHTML = '<div style="display:flex; justify-content:center; padding: 40px;"><div class="spinner"></div></div>';
+            const tbody = document.getElementById('recommendations-table-body');
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;"><div class="spinner" style="margin: 0 auto;"></div></td></tr>';
             
             try {
                 const r = await fetch(`${API_BASE}/recommendations`);
                 if (r.ok) {
                     const recList = await r.json();
-                    container.innerHTML = '';
+                    tbody.innerHTML = '';
                     
                     if (recList.length === 0) {
-                        container.innerHTML = `
-                            <div class="glass-card" style="text-align:center; padding:40px; color:var(--text-secondary);">
-                                <h3>All Systems Operating Normally</h3>
-                                <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">No corrective repair recommendations detected.</p>
-                            </div>
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                                    <h3>All Systems Operating Normally</h3>
+                                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">No active prescriptive repair recommendations found.</p>
+                                </td>
+                            </tr>
                         `;
                         return;
                     }
-
-                    // Hydrate detail inventory parts checklist for each recommendations
-                    for (let recObj of recList) {
-                        let detailedRec = recObj;
-                        try {
-                            const dResp = await fetch(`${API_BASE}/machines/${recObj.machine_id}/recommendations`);
-                            if (dResp.ok) detailedRec = await dResp.json();
-                        } catch(err) {}
-
-                        const mName = getMachineName(detailedRec.machine_id);
-                        const priorityClass = detailedRec.priority.toLowerCase();
-                        
-                        let partsHtml = '';
-                        if (!detailedRec.parts_status || detailedRec.parts_status.length === 0) {
-                            partsHtml = '<p style="font-size:11px; color:var(--text-secondary);">No spares required.</p>';
-                        } else {
-                            partsHtml = `
-                                <table class="parts-table" style="margin-top:6px;">
-                                    <thead>
-                                        <tr>
-                                            <th>Part Name</th>
-                                            <th>Needed</th>
-                                            <th>Stock</th>
-                                            <th>Status</th>
-                                            <th style="text-align:right">Cost</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${detailedRec.parts_status.map(p => `
-                                            <tr>
-                                                <td>${p.part_name}</td>
-                                                <td>${p.quantity_required}</td>
-                                                <td>${p.stock_available}</td>
-                                                <td><span class="part-badge ${p.status}">${p.status}</span></td>
-                                                <td style="text-align:right; color:var(--text-secondary)">$${p.unit_cost.toFixed(2)}</td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            `;
-                        }
-
-                        const card = document.createElement('div');
-                        card.className = 'glass-card rec-card';
-                        card.innerHTML = `
-                            <div class="rec-title-row">
-                                <div>
-                                    <h3 style="font-size:16px; font-weight:700; display:flex; align-items:center; gap:6px; font-family:var(--font-heading)">
-                                        ${mName} Mitigation Action Plan
-                                    </h3>
-                                    <p style="font-size:9px; color:var(--text-muted); margin-top:2px;">Generated: ${new Date(detailedRec.created_at || new Date()).toLocaleString()}</p>
-                                </div>
-                                <span class="rec-priority-badge ${priorityClass}">${detailedRec.priority} Priority (Conf: ${detailedRec.confidence}%)</span>
-                            </div>
-                            <div class="rec-action-box">
-                                <span style="font-size:9px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Remediation Steps</span>
-                                <p style="font-size:12px; margin-top:4px; line-height:1.5;">${detailedRec.recommendation}</p>
-                            </div>
-                            <div>
-                                <span style="font-size:9px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Required Spare Parts Checklist</span>
-                                ${partsHtml}
-                            </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-glass); padding-top:14px; margin-top:6px;">
-                                <span style="font-size:11px; color:var(--text-secondary);">
-                                    Est. Duration: <strong>${detailedRec.estimated_duration_hours || 4} hrs</strong>
+                    recList.forEach(r => {
+                        const priorityClass = r.priority.toLowerCase() === 'critical' ? 'danger' : r.priority.toLowerCase() === 'high' ? 'warning' : 'healthy';
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><strong>${r.machine_id}</strong></td>
+                            <td>${r.recommendation}</td>
+                            <td>
+                                <span class="machine-prob-badge ${priorityClass}">
+                                    ${r.priority}
                                 </span>
-                                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-                                    ${detailedRec.parts_missing ? '<span style="font-size:10px; color:var(--danger); font-weight:600;">Spares shortage warning</span>' : ''}
-                                    <button class="btn-action" onclick="authorizeWorkOrder('${detailedRec.machine_id}', '${detailedRec.priority}', '${detailedRec.recommendation.replace(/'/g, "\\'")}')">
-                                        Authorize Corrective Work Order
-                                    </button>
-                                </div>
-                            </div>
+                            </td>
+                            <td>${new Date(r.created_at).toLocaleString()}</td>
                         `;
-                        container.appendChild(card);
-                    }
+                        tbody.appendChild(tr);
+                    });
                 }
             } catch(e) {
-                container.innerHTML = '<p style="color:var(--danger)">Failed to load global recommendations.</p>';
+                tbody.innerHTML = '<tr><td colspan="4" style="color:var(--danger); text-align:center; padding:20px;">Failed to load global recommendations.</td></tr>';
+            }
+        }
+
+        // Load recommendations list for analytics
+        async function loadRecommendationsList() {
+            try {
+                const r = await fetch(`${API_BASE}/recommendations`);
+                if (r.ok) {
+                    recommendations = await r.json();
+                }
+            } catch(e) {
+                console.error("Recommendations list fetch failure", e);
+            }
+        }
+
+        // Load Work Orders
+        async function loadWorkOrders() {
+            const tbody = document.getElementById('work-orders-table-body');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;"><div class="spinner" style="margin: 0 auto;"></div></td></tr>';
+            
+            try {
+                const r = await fetch(`${API_BASE}/work-orders`);
+                if (r.ok) {
+                    workOrders = await r.json();
+                    tbody.innerHTML = '';
+                    if (workOrders.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                                    <h3>No Active Work Orders</h3>
+                                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">There are currently no scheduled corrective work orders in queue.</p>
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    const techs = [
+                        "Marcus Vance",
+                        "Dave Miller",
+                        "Elena Rostova",
+                        "Carlos Mendez",
+                        "Sarah Jenkins"
+                    ];
+                    workOrders.forEach(wo => {
+                        const statusClass = wo.status === 'completed' ? 'healthy' : wo.status === 'in_progress' ? 'warning' : 'danger';
+                        const tech = techs[wo.id % techs.length];
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><strong>WO-${String(wo.id).padStart(3, '0')}</strong></td>
+                            <td>${wo.machine_id} (${getMachineName(wo.machine_id)})</td>
+                            <td>${tech}</td>
+                            <td>
+                                <span class="machine-prob-badge ${statusClass}">
+                                    ${wo.status.replace('_', ' ')}
+                                </span>
+                            </td>
+                            <td>${new Date(wo.created_at).toLocaleString()}</td>
+                            <td>${wo.completed_at ? new Date(wo.completed_at).toLocaleString() : '—'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch(e) {
+                tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger); text-align:center; padding:20px;">Failed to load work orders.</td></tr>';
             }
         }
 
@@ -1560,26 +1723,79 @@
             document.getElementById('avg-torque-val').textContent = `${avgTorque} Nm`;
             document.getElementById('avg-wear-val').textContent = `${avgToolWear} min`;
 
-            // Render health distribution bars
-            const healthyPct = Math.round((machines.filter(m => getMachineStatus(m.failure_probability) === 'Healthy').length / totalM) * 100);
-            const warningPct = Math.round((machines.filter(m => getMachineStatus(m.failure_probability) === 'Warning').length / totalM) * 100);
-            const criticalPct = Math.round((machines.filter(m => getMachineStatus(m.failure_probability) === 'Critical').length / totalM) * 100);
+            // Calculations for charts
+            const probDistribution = {
+                '0-20%': 0,
+                '20-40%': 0,
+                '40-60%': 0,
+                '60-80%': 0,
+                '80-100%': 0
+            };
+            const statusCounts = {
+                'Healthy': 0,
+                'Warning': 0,
+                'Critical': 0
+            };
+            const priorityCounts = {
+                'Low': 0,
+                'Medium': 0,
+                'High': 0,
+                'Critical': 0
+            };
 
-            const barContainer = document.getElementById('analytics-health-bars');
-            barContainer.innerHTML = `
-                <div class="analytics-bar-row">
-                    <div class="analytics-bar-lbl"><span>Healthy</span><strong>${healthyPct}%</strong></div>
-                    <div class="analytics-bar"><div class="analytics-bar-fill healthy" style="width: ${healthyPct}%"></div></div>
-                </div>
-                <div class="analytics-bar-row">
-                    <div class="analytics-bar-lbl"><span>Warning</span><strong>${warningPct}%</strong></div>
-                    <div class="analytics-bar"><div class="analytics-bar-fill warning" style="width: ${warningPct}%"></div></div>
-                </div>
-                <div class="analytics-bar-row">
-                    <div class="analytics-bar-lbl"><span>Critical</span><strong>${criticalPct}%</strong></div>
-                    <div class="analytics-bar"><div class="analytics-bar-fill critical" style="width: ${criticalPct}%"></div></div>
-                </div>
-            `;
+            machines.forEach(m => {
+                const prob = (m.failure_probability || 0) * 100;
+                if (prob < 20) probDistribution['0-20%']++;
+                else if (prob < 40) probDistribution['20-40%']++;
+                else if (prob < 60) probDistribution['40-60%']++;
+                else if (prob < 80) probDistribution['60-80%']++;
+                else probDistribution['80-100%']++;
+
+                const status = getMachineStatus(m.failure_probability);
+                if (statusCounts[status] !== undefined) statusCounts[status]++;
+            });
+
+            recommendations.forEach(r => {
+                const prio = r.priority || 'Low';
+                if (priorityCounts[prio] !== undefined) priorityCounts[prio]++;
+            });
+
+            // Helper to render a progress bar row
+            const getBarRowHtml = (label, count, total, colorClass, barColor) => {
+                const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                return `
+                    <div class="analytics-bar-row">
+                        <div class="analytics-bar-lbl">
+                            <span>${label}</span>
+                            <strong>${count} unit(s) (${pct}%)</strong>
+                        </div>
+                        <div class="prediction-val-bar" style="height: 6px;">
+                            <div class="prediction-val-fill" style="width: ${pct}%; background: ${barColor || `var(--${colorClass})`}; height: 100%; border-radius: 3px;"></div>
+                        </div>
+                    </div>
+                `;
+            };
+
+            // Populate Failure Probability Distribution
+            const probContainer = document.getElementById('analytics-prob-bars');
+            probContainer.innerHTML = Object.entries(probDistribution).map(([bucket, count]) => {
+                const color = bucket === '80-100%' ? 'var(--danger)' : bucket === '60-80%' ? 'var(--warning)' : 'var(--primary)';
+                return getBarRowHtml(bucket, count, machines.length, '', color);
+            }).join('');
+
+            // Populate Status Splits
+            const statusContainer = document.getElementById('analytics-status-bars');
+            statusContainer.innerHTML = Object.entries(statusCounts).map(([status, count]) => {
+                const color = status === 'Critical' ? 'var(--danger)' : status === 'Warning' ? 'var(--warning)' : 'var(--success)';
+                return getBarRowHtml(status, count, machines.length, '', color);
+            }).join('');
+
+            // Populate Priorities
+            const priorityContainer = document.getElementById('analytics-priority-bars');
+            priorityContainer.innerHTML = Object.entries(priorityCounts).map(([priority, count]) => {
+                const color = priority === 'Critical' ? 'var(--danger)' : priority === 'High' ? 'var(--warning)' : priority === 'Medium' ? 'var(--primary)' : 'var(--text-muted)';
+                return getBarRowHtml(priority, count, recommendations.length, '', color);
+            }).join('');
 
             // Render Table
             const tbody = document.getElementById('fleet-table-body');
@@ -1710,7 +1926,8 @@
         // ----------------- RENDER SUB-METHODS FOR MACHINES VIEW -----------------
         
         function renderMachineList() {
-            const container = document.getElementById('machine-list-container');
+            const container = document.getElementById('machine-list-table-body');
+            if (!container) return;
             container.innerHTML = '';
             
             machines.forEach(m => {
@@ -1718,31 +1935,30 @@
                 const riskLevel = status === 'Critical' ? 'danger' : status === 'Warning' ? 'warning' : 'healthy';
                 const isActive = m.machine_id === activeId;
                 
-                const item = document.createElement('div');
-                item.className = `machine-item ${isActive ? 'active' : ''}`;
-                item.id = `m-item-${m.machine_id}`;
-                item.onclick = () => selectMachine(m.machine_id);
+                const tr = document.createElement('tr');
+                tr.id = `m-row-${m.machine_id}`;
+                tr.className = `clickable-row ${isActive ? 'active-row' : ''}`;
+                tr.style.cursor = 'pointer';
+                if (isActive) {
+                    tr.style.background = 'rgba(255,255,255,0.06)';
+                } else {
+                    tr.style.background = 'transparent';
+                }
+                tr.style.transition = 'background 0.2s';
+                tr.onclick = () => selectMachine(m.machine_id);
                 
-                item.innerHTML = `
-                    <div class="machine-item-top">
-                        <div class="machine-name-group">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${riskLevel === 'danger' ? '#f43f5e' : riskLevel === 'warning' ? '#f59e0b' : '#10b981'}" stroke-width="2.5">
-                                <circle cx="12" cy="12" r="10" />
-                                <circle cx="12" cy="12" r="4" />
-                            </svg>
-                            <span>${getMachineName(m.machine_id)}</span>
-                        </div>
-                        <span class="machine-prob-badge ${riskLevel}">${status}</span>
-                    </div>
-                    <div class="machine-metrics-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2px 8px; font-size: 10px; margin-top: 4px;">
-                        <span>Air Temp: ${m.air_temperature.toFixed(1)}°C</span>
-                        <span>Proc Temp: ${m.process_temperature.toFixed(1)}°C</span>
-                        <span>Speed: ${m.rotational_speed} RPM</span>
-                        <span>Torque: ${m.torque.toFixed(1)} Nm</span>
-                        <span style="grid-column: span 2">Tool Wear: ${m.tool_wear.toFixed(1)} min</span>
-                    </div>
+                tr.innerHTML = `
+                    <td><strong>${m.machine_id}</strong></td>
+                    <td>${getMachineName(m.machine_id)}</td>
+                    <td>${getMachineModel(m.machine_id)}</td>
+                    <td>${getMachineLocation(m.machine_id)}</td>
+                    <td>
+                        <span class="machine-prob-badge ${riskLevel}">
+                            ${status}
+                        </span>
+                    </td>
                 `;
-                container.appendChild(item);
+                container.appendChild(tr);
             });
         }
 
@@ -2016,6 +2232,7 @@
         async function init() {
             await fetchHealth();
             await loadMachines();
+            await loadRecommendationsList();
             await loadAlerts();
             await fetchAnalytics();
             
@@ -2030,10 +2247,20 @@
         // Setup live vitals loop polling
         setInterval(async () => {
             await loadMachines();
+            await loadRecommendationsList();
             await loadAlerts();
             await fetchAnalytics();
             if (activeId) {
                 await loadDetails(activeId);
+            }
+            if (activePage === 'predictions') {
+                loadPredictions();
+            } else if (activePage === 'recommendations') {
+                loadGlobalRecommendations();
+            } else if (activePage === 'work-orders') {
+                loadWorkOrders();
+            } else if (activePage === 'analytics') {
+                renderAnalyticsView();
             }
         }, 3000);
     </script>

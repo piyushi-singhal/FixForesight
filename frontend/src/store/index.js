@@ -71,6 +71,17 @@ export const searchIncidents = createAsyncThunk(
   }
 );
 
+export const fetchWorkOrders = createAsyncThunk(
+  'workOrders/fetchWorkOrders',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await recommendationService.getWorkOrders();
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 // Slices
 const machinesSlice = createSlice({
   name: 'machines',
@@ -212,6 +223,28 @@ const searchSlice = createSlice({
   }
 });
 
+const workOrdersSlice = createSlice({
+  name: 'workOrders',
+  initialState: {
+    list: [],
+    loading: false,
+    error: null
+  },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchWorkOrders.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(fetchWorkOrders.fulfilled, (state, action) => {
+        state.loading = false;
+        state.list = action.payload;
+      })
+      .addCase(fetchWorkOrders.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  }
+});
+
 // Configure and Export Store
 export const store = configureStore({
   reducer: {
@@ -219,7 +252,8 @@ export const store = configureStore({
     detail: detailSlice.reducer,
     recommendation: recommendationSlice.reducer,
     alerts: alertsSlice.reducer,
-    search: searchSlice.reducer
+    search: searchSlice.reducer,
+    workOrders: workOrdersSlice.reducer
   }
 });
 

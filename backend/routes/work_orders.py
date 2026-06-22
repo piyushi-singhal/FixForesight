@@ -1,8 +1,13 @@
 from fastapi import APIRouter
-from backend.schemas.models import WorkOrderRequest
+from typing import List
+from backend.schemas.models import WorkOrderRequest, WorkOrderResponse
 from backend.services import db_service
 
 router = APIRouter()
+
+@router.get("/work-orders", response_model=List[WorkOrderResponse])
+def get_work_orders():
+    return db_service.get_all_work_orders()
 
 @router.post("/work-orders")
 def post_work_order(req: WorkOrderRequest):
