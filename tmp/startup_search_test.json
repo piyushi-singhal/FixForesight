@@ -1,0 +1,1645 @@
+{
+  "numFound": 205,
+  "docs": [
+    {
+      "id": "inc-001",
+      "machine_id": "M101",
+      "failure_signature": "Vibration levels spike (bearing wear), high temperature near main drive spindle",
+      "action_taken": "Replaced rotary bearing B-10 and adjusted rotor alignment",
+      "outcome": "Resolved",
+      "date": "2026-03-15T08:00:00Z"
+    },
+    {
+      "id": "inc-002",
+      "machine_id": "M103",
+      "failure_signature": "Overheating shutdown triggered, core temperature reached 99.1\u00b0C",
+      "action_taken": "Cleaned heat exchanger lines and replaced cooling fan F-8",
+      "outcome": "Resolved",
+      "date": "2026-04-01T14:30:00Z"
+    },
+    {
+      "id": "inc-003",
+      "machine_id": "M105",
+      "failure_signature": "Pressure valve leak detected, line pressure fluctuated between 80-140 PSI",
+      "action_taken": "Replaced pressure valve V-12 and high-temp gasket",
+      "outcome": "Resolved",
+      "date": "2026-04-18T11:15:00Z"
+    },
+    {
+      "id": "pred-1",
+      "machine_id": "M101",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.624365Z"
+    },
+    {
+      "id": "pred-2",
+      "machine_id": "M102",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 13%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.627656Z"
+    },
+    {
+      "id": "pred-3",
+      "machine_id": "M103",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.629224Z"
+    },
+    {
+      "id": "pred-4",
+      "machine_id": "M104",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 10%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.630654Z"
+    },
+    {
+      "id": "pred-5",
+      "machine_id": "M105",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 10%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.632281Z"
+    },
+    {
+      "id": "pred-6",
+      "machine_id": "M106",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 10%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.633654Z"
+    },
+    {
+      "id": "pred-7",
+      "machine_id": "M107",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.635015Z"
+    },
+    {
+      "id": "pred-8",
+      "machine_id": "M108",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.636353Z"
+    },
+    {
+      "id": "pred-9",
+      "machine_id": "M109",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.638155Z"
+    },
+    {
+      "id": "pred-10",
+      "machine_id": "M110",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.639554Z"
+    },
+    {
+      "id": "pred-11",
+      "machine_id": "M111",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.641662Z"
+    },
+    {
+      "id": "pred-12",
+      "machine_id": "M112",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 12%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.643258Z"
+    },
+    {
+      "id": "pred-13",
+      "machine_id": "M113",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 27%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.644976Z"
+    },
+    {
+      "id": "pred-14",
+      "machine_id": "M114",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.646431Z"
+    },
+    {
+      "id": "pred-15",
+      "machine_id": "M115",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 10%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.648489Z"
+    },
+    {
+      "id": "pred-16",
+      "machine_id": "M116",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 11%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.650648Z"
+    },
+    {
+      "id": "pred-17",
+      "machine_id": "M117",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 28%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.652381Z"
+    },
+    {
+      "id": "pred-18",
+      "machine_id": "M118",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 14%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.654678Z"
+    },
+    {
+      "id": "pred-19",
+      "machine_id": "M119",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 29%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.657157Z"
+    },
+    {
+      "id": "pred-20",
+      "machine_id": "M120",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.659616Z"
+    },
+    {
+      "id": "pred-21",
+      "machine_id": "M121",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 26%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.662200Z"
+    },
+    {
+      "id": "pred-22",
+      "machine_id": "M122",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 13%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.664561Z"
+    },
+    {
+      "id": "pred-23",
+      "machine_id": "M123",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.666223Z"
+    },
+    {
+      "id": "pred-24",
+      "machine_id": "M124",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 10%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.667610Z"
+    },
+    {
+      "id": "pred-25",
+      "machine_id": "M125",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.668964Z"
+    },
+    {
+      "id": "pred-26",
+      "machine_id": "M126",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 10%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.670309Z"
+    },
+    {
+      "id": "pred-27",
+      "machine_id": "M127",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.672100Z"
+    },
+    {
+      "id": "pred-28",
+      "machine_id": "M128",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 10%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.673918Z"
+    },
+    {
+      "id": "pred-29",
+      "machine_id": "M129",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.675619Z"
+    },
+    {
+      "id": "pred-30",
+      "machine_id": "M130",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.677763Z"
+    },
+    {
+      "id": "pred-31",
+      "machine_id": "M131",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 28%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.679409Z"
+    },
+    {
+      "id": "pred-32",
+      "machine_id": "M132",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 10%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.680788Z"
+    },
+    {
+      "id": "pred-33",
+      "machine_id": "M133",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 13%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.682180Z"
+    },
+    {
+      "id": "pred-34",
+      "machine_id": "M134",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.683795Z"
+    },
+    {
+      "id": "pred-35",
+      "machine_id": "M135",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.685374Z"
+    },
+    {
+      "id": "pred-36",
+      "machine_id": "M136",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 12%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.686739Z"
+    },
+    {
+      "id": "pred-37",
+      "machine_id": "M137",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.688603Z"
+    },
+    {
+      "id": "pred-38",
+      "machine_id": "M138",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.690594Z"
+    },
+    {
+      "id": "pred-39",
+      "machine_id": "M139",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 31%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.692106Z"
+    },
+    {
+      "id": "pred-40",
+      "machine_id": "M140",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 27%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.693560Z"
+    },
+    {
+      "id": "pred-41",
+      "machine_id": "M141",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 26%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.694953Z"
+    },
+    {
+      "id": "pred-42",
+      "machine_id": "M142",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 28%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.696290Z"
+    },
+    {
+      "id": "pred-43",
+      "machine_id": "M143",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 26%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.697900Z"
+    },
+    {
+      "id": "pred-44",
+      "machine_id": "M144",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 32%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.699508Z"
+    },
+    {
+      "id": "pred-45",
+      "machine_id": "M145",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 10%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.700984Z"
+    },
+    {
+      "id": "pred-46",
+      "machine_id": "M146",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 10%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.702919Z"
+    },
+    {
+      "id": "pred-47",
+      "machine_id": "M147",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.704338Z"
+    },
+    {
+      "id": "pred-48",
+      "machine_id": "M148",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 13%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.705743Z"
+    },
+    {
+      "id": "pred-49",
+      "machine_id": "M149",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 14%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.707516Z"
+    },
+    {
+      "id": "pred-50",
+      "machine_id": "M150",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 11%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.709031Z"
+    },
+    {
+      "id": "pred-51",
+      "machine_id": "M151",
+      "failure_signature": "[PREDICTION] Predicted failure: Machine Failure (Probability: 98%)",
+      "action_taken": "Estimated time to failure: 6 Hours",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.710402Z"
+    },
+    {
+      "id": "pred-52",
+      "machine_id": "M152",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 14%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.711738Z"
+    },
+    {
+      "id": "pred-53",
+      "machine_id": "M153",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.713079Z"
+    },
+    {
+      "id": "pred-54",
+      "machine_id": "M154",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.714773Z"
+    },
+    {
+      "id": "pred-55",
+      "machine_id": "M155",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.716391Z"
+    },
+    {
+      "id": "pred-56",
+      "machine_id": "M156",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.717858Z"
+    },
+    {
+      "id": "pred-57",
+      "machine_id": "M157",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.719418Z"
+    },
+    {
+      "id": "pred-58",
+      "machine_id": "M158",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.720849Z"
+    },
+    {
+      "id": "pred-59",
+      "machine_id": "M159",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.722231Z"
+    },
+    {
+      "id": "pred-60",
+      "machine_id": "M160",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 30%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.723681Z"
+    },
+    {
+      "id": "pred-61",
+      "machine_id": "M161",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 13%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.725225Z"
+    },
+    {
+      "id": "pred-62",
+      "machine_id": "M162",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.726625Z"
+    },
+    {
+      "id": "pred-63",
+      "machine_id": "M163",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.727995Z"
+    },
+    {
+      "id": "pred-64",
+      "machine_id": "M164",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.729349Z"
+    },
+    {
+      "id": "pred-65",
+      "machine_id": "M165",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.730898Z"
+    },
+    {
+      "id": "pred-66",
+      "machine_id": "M166",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 13%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.732294Z"
+    },
+    {
+      "id": "pred-67",
+      "machine_id": "M167",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.733665Z"
+    },
+    {
+      "id": "pred-68",
+      "machine_id": "M168",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.735307Z"
+    },
+    {
+      "id": "pred-69",
+      "machine_id": "M169",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.737081Z"
+    },
+    {
+      "id": "pred-70",
+      "machine_id": "M170",
+      "failure_signature": "[PREDICTION] Predicted failure: Machine Failure (Probability: 99%)",
+      "action_taken": "Estimated time to failure: 6 Hours",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.738586Z"
+    },
+    {
+      "id": "pred-71",
+      "machine_id": "M171",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.740111Z"
+    },
+    {
+      "id": "pred-72",
+      "machine_id": "M172",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 12%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.741512Z"
+    },
+    {
+      "id": "pred-73",
+      "machine_id": "M173",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 92%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.743021Z"
+    },
+    {
+      "id": "pred-74",
+      "machine_id": "M174",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 12%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.744531Z"
+    },
+    {
+      "id": "pred-75",
+      "machine_id": "M175",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 12%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.745922Z"
+    },
+    {
+      "id": "pred-76",
+      "machine_id": "M176",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 4%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.747304Z"
+    },
+    {
+      "id": "pred-77",
+      "machine_id": "M177",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 2%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.749007Z"
+    },
+    {
+      "id": "pred-78",
+      "machine_id": "M178",
+      "failure_signature": "[PREDICTION] Predicted failure: Machine Failure (Probability: 50%)",
+      "action_taken": "Estimated time to failure: 5 Days",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.750431Z"
+    },
+    {
+      "id": "pred-79",
+      "machine_id": "M179",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 13%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.751833Z"
+    },
+    {
+      "id": "pred-80",
+      "machine_id": "M180",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 10%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.753206Z"
+    },
+    {
+      "id": "pred-81",
+      "machine_id": "M181",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 11%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.754806Z"
+    },
+    {
+      "id": "pred-82",
+      "machine_id": "M182",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 11%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.756202Z"
+    },
+    {
+      "id": "pred-83",
+      "machine_id": "M183",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.757737Z"
+    },
+    {
+      "id": "pred-84",
+      "machine_id": "M184",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.759219Z"
+    },
+    {
+      "id": "pred-85",
+      "machine_id": "M185",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 12%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.760854Z"
+    },
+    {
+      "id": "pred-86",
+      "machine_id": "M186",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.762363Z"
+    },
+    {
+      "id": "pred-87",
+      "machine_id": "M187",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 10%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.764124Z"
+    },
+    {
+      "id": "pred-88",
+      "machine_id": "M188",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.765824Z"
+    },
+    {
+      "id": "pred-89",
+      "machine_id": "M189",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 13%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.767538Z"
+    },
+    {
+      "id": "pred-90",
+      "machine_id": "M190",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.768924Z"
+    },
+    {
+      "id": "pred-91",
+      "machine_id": "M191",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.770266Z"
+    },
+    {
+      "id": "pred-92",
+      "machine_id": "M192",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.771809Z"
+    },
+    {
+      "id": "pred-93",
+      "machine_id": "M193",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.773497Z"
+    },
+    {
+      "id": "pred-94",
+      "machine_id": "M194",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 9%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.775089Z"
+    },
+    {
+      "id": "pred-95",
+      "machine_id": "M195",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.776634Z"
+    },
+    {
+      "id": "pred-96",
+      "machine_id": "M196",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 27%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.778299Z"
+    },
+    {
+      "id": "pred-97",
+      "machine_id": "M197",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.779852Z"
+    },
+    {
+      "id": "pred-98",
+      "machine_id": "M198",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.781372Z"
+    },
+    {
+      "id": "pred-99",
+      "machine_id": "M199",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 8%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.782721Z"
+    },
+    {
+      "id": "pred-100",
+      "machine_id": "M200",
+      "failure_signature": "[PREDICTION] Predicted failure: Normal Operation (Probability: 10%)",
+      "action_taken": "Estimated time to failure: N/A",
+      "outcome": "Predicted",
+      "date": "2026-06-23T19:31:43.784074Z"
+    },
+    {
+      "id": "rec-1",
+      "machine_id": "M101",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.627114Z"
+    },
+    {
+      "id": "rec-2",
+      "machine_id": "M102",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.628880Z"
+    },
+    {
+      "id": "rec-3",
+      "machine_id": "M103",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.630325Z"
+    },
+    {
+      "id": "rec-4",
+      "machine_id": "M104",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.631952Z"
+    },
+    {
+      "id": "rec-5",
+      "machine_id": "M105",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.633337Z"
+    },
+    {
+      "id": "rec-6",
+      "machine_id": "M106",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.634699Z"
+    },
+    {
+      "id": "rec-7",
+      "machine_id": "M107",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.636039Z"
+    },
+    {
+      "id": "rec-8",
+      "machine_id": "M108",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.637631Z"
+    },
+    {
+      "id": "rec-9",
+      "machine_id": "M109",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.639236Z"
+    },
+    {
+      "id": "rec-10",
+      "machine_id": "M110",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.641252Z"
+    },
+    {
+      "id": "rec-11",
+      "machine_id": "M111",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.642923Z"
+    },
+    {
+      "id": "rec-12",
+      "machine_id": "M112",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.644646Z"
+    },
+    {
+      "id": "rec-13",
+      "machine_id": "M113",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.3%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.646109Z"
+    },
+    {
+      "id": "rec-14",
+      "machine_id": "M114",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.648132Z"
+    },
+    {
+      "id": "rec-15",
+      "machine_id": "M115",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.650217Z"
+    },
+    {
+      "id": "rec-16",
+      "machine_id": "M116",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.651932Z"
+    },
+    {
+      "id": "rec-17",
+      "machine_id": "M117",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.3%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.654251Z"
+    },
+    {
+      "id": "rec-18",
+      "machine_id": "M118",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.656521Z"
+    },
+    {
+      "id": "rec-19",
+      "machine_id": "M119",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.3%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.658997Z"
+    },
+    {
+      "id": "rec-20",
+      "machine_id": "M120",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.661599Z"
+    },
+    {
+      "id": "rec-21",
+      "machine_id": "M121",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.3%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.664159Z"
+    },
+    {
+      "id": "rec-22",
+      "machine_id": "M122",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.665898Z"
+    },
+    {
+      "id": "rec-23",
+      "machine_id": "M123",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.667297Z"
+    },
+    {
+      "id": "rec-24",
+      "machine_id": "M124",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.668649Z"
+    },
+    {
+      "id": "rec-25",
+      "machine_id": "M125",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.669998Z"
+    },
+    {
+      "id": "rec-26",
+      "machine_id": "M126",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.671722Z"
+    },
+    {
+      "id": "rec-27",
+      "machine_id": "M127",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.673474Z"
+    },
+    {
+      "id": "rec-28",
+      "machine_id": "M128",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.675268Z"
+    },
+    {
+      "id": "rec-29",
+      "machine_id": "M129",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.677308Z"
+    },
+    {
+      "id": "rec-30",
+      "machine_id": "M130",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.679084Z"
+    },
+    {
+      "id": "rec-31",
+      "machine_id": "M131",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.3%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.680473Z"
+    },
+    {
+      "id": "rec-32",
+      "machine_id": "M132",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.681827Z"
+    },
+    {
+      "id": "rec-33",
+      "machine_id": "M133",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.683412Z"
+    },
+    {
+      "id": "rec-34",
+      "machine_id": "M134",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.685046Z"
+    },
+    {
+      "id": "rec-35",
+      "machine_id": "M135",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.686423Z"
+    },
+    {
+      "id": "rec-36",
+      "machine_id": "M136",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.688140Z"
+    },
+    {
+      "id": "rec-37",
+      "machine_id": "M137",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.690242Z"
+    },
+    {
+      "id": "rec-38",
+      "machine_id": "M138",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.691776Z"
+    },
+    {
+      "id": "rec-39",
+      "machine_id": "M139",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.3%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.693186Z"
+    },
+    {
+      "id": "rec-40",
+      "machine_id": "M140",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.3%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.694634Z"
+    },
+    {
+      "id": "rec-41",
+      "machine_id": "M141",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.3%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.695979Z"
+    },
+    {
+      "id": "rec-42",
+      "machine_id": "M142",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.3%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.697554Z"
+    },
+    {
+      "id": "rec-43",
+      "machine_id": "M143",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.3%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.699174Z"
+    },
+    {
+      "id": "rec-44",
+      "machine_id": "M144",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.3%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.700662Z"
+    },
+    {
+      "id": "rec-45",
+      "machine_id": "M145",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.702371Z"
+    },
+    {
+      "id": "rec-46",
+      "machine_id": "M146",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.704019Z"
+    },
+    {
+      "id": "rec-47",
+      "machine_id": "M147",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.705387Z"
+    },
+    {
+      "id": "rec-48",
+      "machine_id": "M148",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.707091Z"
+    },
+    {
+      "id": "rec-49",
+      "machine_id": "M149",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.708706Z"
+    },
+    {
+      "id": "rec-50",
+      "machine_id": "M150",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.710084Z"
+    },
+    {
+      "id": "rec-51",
+      "machine_id": "M151",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: Immediate Maintenance Required",
+      "action_taken": "Priority: Critical (Confidence: 98.7%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.711424Z"
+    },
+    {
+      "id": "rec-52",
+      "machine_id": "M152",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.712763Z"
+    },
+    {
+      "id": "rec-53",
+      "machine_id": "M153",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.714412Z"
+    },
+    {
+      "id": "rec-54",
+      "machine_id": "M154",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.716058Z"
+    },
+    {
+      "id": "rec-55",
+      "machine_id": "M155",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.717529Z"
+    },
+    {
+      "id": "rec-56",
+      "machine_id": "M156",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.719065Z"
+    },
+    {
+      "id": "rec-57",
+      "machine_id": "M157",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.720526Z"
+    },
+    {
+      "id": "rec-58",
+      "machine_id": "M158",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.721910Z"
+    },
+    {
+      "id": "rec-59",
+      "machine_id": "M159",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.723343Z"
+    },
+    {
+      "id": "rec-60",
+      "machine_id": "M160",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.3%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.724892Z"
+    },
+    {
+      "id": "rec-61",
+      "machine_id": "M161",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.726296Z"
+    },
+    {
+      "id": "rec-62",
+      "machine_id": "M162",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.727677Z"
+    },
+    {
+      "id": "rec-63",
+      "machine_id": "M163",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.729030Z"
+    },
+    {
+      "id": "rec-64",
+      "machine_id": "M164",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.730572Z"
+    },
+    {
+      "id": "rec-65",
+      "machine_id": "M165",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.731971Z"
+    },
+    {
+      "id": "rec-66",
+      "machine_id": "M166",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.733347Z"
+    },
+    {
+      "id": "rec-67",
+      "machine_id": "M167",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.734933Z"
+    },
+    {
+      "id": "rec-68",
+      "machine_id": "M168",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.736725Z"
+    },
+    {
+      "id": "rec-69",
+      "machine_id": "M169",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.738263Z"
+    },
+    {
+      "id": "rec-70",
+      "machine_id": "M170",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: Immediate Maintenance Required",
+      "action_taken": "Priority: Critical (Confidence: 99.8%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.739715Z"
+    },
+    {
+      "id": "rec-71",
+      "machine_id": "M171",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.741188Z"
+    },
+    {
+      "id": "rec-72",
+      "machine_id": "M172",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.742695Z"
+    },
+    {
+      "id": "rec-73",
+      "machine_id": "M173",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.9%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.744212Z"
+    },
+    {
+      "id": "rec-74",
+      "machine_id": "M174",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.745607Z"
+    },
+    {
+      "id": "rec-75",
+      "machine_id": "M175",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.746995Z"
+    },
+    {
+      "id": "rec-76",
+      "machine_id": "M176",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 4.9%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.748653Z"
+    },
+    {
+      "id": "rec-77",
+      "machine_id": "M177",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 2.5%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.750103Z"
+    },
+    {
+      "id": "rec-78",
+      "machine_id": "M178",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: Schedule preventive maintenance",
+      "action_taken": "Priority: Medium (Confidence: 50.6%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.751510Z"
+    },
+    {
+      "id": "rec-79",
+      "machine_id": "M179",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.752884Z"
+    },
+    {
+      "id": "rec-80",
+      "machine_id": "M180",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.754468Z"
+    },
+    {
+      "id": "rec-81",
+      "machine_id": "M181",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.755875Z"
+    },
+    {
+      "id": "rec-82",
+      "machine_id": "M182",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.757394Z"
+    },
+    {
+      "id": "rec-83",
+      "machine_id": "M183",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.758888Z"
+    },
+    {
+      "id": "rec-84",
+      "machine_id": "M184",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.760488Z"
+    },
+    {
+      "id": "rec-85",
+      "machine_id": "M185",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.762033Z"
+    },
+    {
+      "id": "rec-86",
+      "machine_id": "M186",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.763770Z"
+    },
+    {
+      "id": "rec-87",
+      "machine_id": "M187",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.765328Z"
+    },
+    {
+      "id": "rec-88",
+      "machine_id": "M188",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.767190Z"
+    },
+    {
+      "id": "rec-89",
+      "machine_id": "M189",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.768606Z"
+    },
+    {
+      "id": "rec-90",
+      "machine_id": "M190",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.769953Z"
+    },
+    {
+      "id": "rec-91",
+      "machine_id": "M191",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.771450Z"
+    },
+    {
+      "id": "rec-92",
+      "machine_id": "M192",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.773111Z"
+    },
+    {
+      "id": "rec-93",
+      "machine_id": "M193",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.774700Z"
+    },
+    {
+      "id": "rec-94",
+      "machine_id": "M194",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.776298Z"
+    },
+    {
+      "id": "rec-95",
+      "machine_id": "M195",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.777952Z"
+    },
+    {
+      "id": "rec-96",
+      "machine_id": "M196",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.3%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.779526Z"
+    },
+    {
+      "id": "rec-97",
+      "machine_id": "M197",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.781045Z"
+    },
+    {
+      "id": "rec-98",
+      "machine_id": "M198",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.782405Z"
+    },
+    {
+      "id": "rec-99",
+      "machine_id": "M199",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.783755Z"
+    },
+    {
+      "id": "rec-100",
+      "machine_id": "M200",
+      "failure_signature": "[RECOMMENDATION] Prescriptive mitigation: No active recommendations. Machine operation normal.",
+      "action_taken": "Priority: Low (Confidence: 0.1%)",
+      "outcome": "Prescribed",
+      "date": "2026-06-23T19:31:43.784498Z"
+    },
+    {
+      "id": "wo-1",
+      "machine_id": "M151",
+      "failure_signature": "[WORK ORDER] Action required: Immediate Maintenance Required",
+      "action_taken": "Priority: Critical (Status: open)",
+      "outcome": "Scheduled - Open",
+      "date": "2026-06-23T19:23:50.933165Z"
+    },
+    {
+      "id": "wo-2",
+      "machine_id": "M151",
+      "failure_signature": "[WORK ORDER] Action required: Immediate Maintenance Required",
+      "action_taken": "Priority: Critical (Status: open)",
+      "outcome": "Scheduled - Open",
+      "date": "2026-06-23T19:23:50.935422Z"
+    }
+  ]
+}

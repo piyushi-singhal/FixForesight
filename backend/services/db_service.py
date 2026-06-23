@@ -535,6 +535,29 @@ def create_work_order(machine_id: str = None, priority: str = None, action_requi
             
         db_sess.commit()
         db_sess.refresh(db_wo)
+        
+        # Real-time Solr indexing/updates
+        try:
+            if recommendation_id is not None:
+                delete_document_from_solr(f"rec-{recommendation_id}")
+            else:
+                delete_document_from_solr(f"rec-")
+                
+            wo_doc = {
+                "id": f"wo-{db_wo.id}",
+                "machine_id": db_wo.machine_id,
+                "failure_signature": f"[WORK ORDER] Action required: {db_wo.action_required}",
+                "action_taken": f"Priority: {db_wo.priority} (Status: {db_wo.status})",
+                "outcome": f"Scheduled - {db_wo.status.capitalize()}",
+                "date": db_wo.created_at.isoformat() + "Z" if db_wo.created_at else datetime.utcnow().isoformat() + "Z"
+            }
+            index_documents_in_solr([wo_doc])
+            
+            # Sync data to Solr to ensure all statuses/predictions/recommendations are up to date
+            sync_data_to_solr()
+        except Exception as solr_err:
+            print(f"Warning: Failed to update Solr for work order: {solr_err}")
+            
         return db_wo.id
     finally:
         db_sess.close()
@@ -551,7 +574,113 @@ def create_raw_alert(machine_id: str, severity: str, message: str):
         db_sess.add(db_alert)
         db_sess.commit()
         db_sess.refresh(db_alert)
+        
+        # Real-time Solr indexing/updates
+        try:
+            alert_doc = {
+                "id": f"alert-{db_alert.alert_id}",
+                "machine_id": db_alert.machine_id,
+                "failure_signature": f"[ALERT] Message: {db_alert.message}",
+                "action_taken": f"Severity: {db_alert.severity}",
+                "outcome": "Active Alert",
+                "date": db_alert.created_at.isoformat() + "Z" if db_alert.created_at else datetime.utcnow().isoformat() + "Z"
+            }
+            index_documents_in_solr([alert_doc])
+        except Exception as solr_err:
+            print(f"Warning: Failed to index alert in Solr: {solr_err}")
+            
         return db_alert.alert_id
+    finally:
+        db_sess.close()
+
+def index_documents_in_solr(docs: list):
+    import requests
+    solr_url = os.environ.get("SOLR_URL", "http://localhost:8983/solr/incidents")
+    try:
+        response = requests.post(
+            f"{solr_url}/update?commit=true",
+            json=docs,
+            headers={"Content-Type": "application/json"},
+            timeout=5.0
+        )
+        if response.status_code != 200:
+            print(f"Warning: Solr update failed with status {response.status_code}: {response.text}")
+    except Exception as e:
+        print(f"Warning: Failed to send documents to Solr: {e}")
+
+def delete_document_from_solr(doc_id: str):
+    import requests
+    solr_url = os.environ.get("SOLR_URL", "http://localhost:8983/solr/incidents")
+    try:
+        response = requests.post(
+            f"{solr_url}/update?commit=true",
+            json={"delete": {"id": doc_id}},
+            headers={"Content-Type": "application/json"},
+            timeout=5.0
+        )
+        if response.status_code != 200:
+            print(f"Warning: Solr delete failed with status {response.status_code}: {response.text}")
+    except Exception as e:
+        print(f"Warning: Failed to delete document from Solr: {e}")
+
+def sync_data_to_solr():
+    db_sess = SessionLocal()
+    try:
+        from backend.database.models import Prediction, Recommendation, WorkOrder, Alert
+        
+        preds = db_sess.query(Prediction).all()
+        recs = db_sess.query(Recommendation).all()
+        work_orders = db_sess.query(WorkOrder).all()
+        alerts = db_sess.query(Alert).all()
+        
+        docs = []
+        
+        # Format predictions
+        for p in preds:
+            docs.append({
+                "id": f"pred-{p.prediction_id}",
+                "machine_id": p.machine_id,
+                "failure_signature": f"[PREDICTION] Predicted failure: {p.predicted_failure} (Probability: {int(p.failure_probability * 100) if p.failure_probability <= 1.0 else int(p.failure_probability)}%)",
+                "action_taken": f"Estimated time to failure: {p.time_to_failure}",
+                "outcome": "Predicted",
+                "date": p.created_at.isoformat() + "Z" if p.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        # Format recommendations
+        for r in recs:
+            docs.append({
+                "id": f"rec-{r.recommendation_id}",
+                "machine_id": r.machine_id,
+                "failure_signature": f"[RECOMMENDATION] Prescriptive mitigation: {r.recommendation}",
+                "action_taken": f"Priority: {r.priority} (Confidence: {r.confidence:.1f}%)",
+                "outcome": "Prescribed",
+                "date": r.created_at.isoformat() + "Z" if r.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        # Format work orders
+        for wo in work_orders:
+            docs.append({
+                "id": f"wo-{wo.id}",
+                "machine_id": wo.machine_id,
+                "failure_signature": f"[WORK ORDER] Action required: {wo.action_required}",
+                "action_taken": f"Priority: {wo.priority} (Status: {wo.status})",
+                "outcome": f"Scheduled - {wo.status.capitalize()}",
+                "date": wo.created_at.isoformat() + "Z" if wo.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        # Format alerts
+        for a in alerts:
+            docs.append({
+                "id": f"alert-{a.alert_id}",
+                "machine_id": a.machine_id,
+                "failure_signature": f"[ALERT] Message: {a.message}",
+                "action_taken": f"Severity: {a.severity}",
+                "outcome": "Active Alert",
+                "date": a.created_at.isoformat() + "Z" if a.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        if docs:
+            index_documents_in_solr(docs)
     finally:
         db_sess.close()
 
@@ -559,7 +688,6 @@ def search_incidents(q: str):
     import requests
     solr_url = os.environ.get("SOLR_URL", "http://localhost:8983/solr/incidents")
     
-    # Static fallback data
     static_incidents = [
         {"id": "inc-001", "machine_id": "M101", "failure_signature": "Vibration levels spike (bearing wear), high temperature near main drive spindle", "action_taken": "Replaced rotary bearing B-10 and adjusted rotor alignment", "outcome": "Resolved", "date": "2026-03-15T08:00:00Z"},
         {"id": "inc-002", "machine_id": "M103", "failure_signature": "Overheating shutdown triggered, core temperature reached 99.1°C", "action_taken": "Cleaned heat exchanger lines and replaced cooling fan F-8", "outcome": "Resolved", "date": "2026-04-01T14:30:00Z"},
@@ -588,16 +716,78 @@ def search_incidents(q: str):
     except Exception as e:
         print(f"Warning: Solr request failed ({e}). Falling back to local static search.")
         
-    # Local static fallback search
     query_clean = q.lower().strip() if q else ""
     results = []
-    if query_clean == "*:*" or not query_clean:
-        results = static_incidents
+    
+    # Start with static historical incidents
+    local_docs = list(static_incidents)
+    
+    # Query database and format predictions, recommendations, work orders, and alerts
+    db_sess = SessionLocal()
+    try:
+        from backend.database.models import Prediction, Recommendation, WorkOrder, Alert
+        
+        preds = db_sess.query(Prediction).all()
+        recs = db_sess.query(Recommendation).all()
+        work_orders = db_sess.query(WorkOrder).all()
+        alerts = db_sess.query(Alert).all()
+        
+        # Format predictions
+        for p in preds:
+            local_docs.append({
+                "id": f"pred-{p.prediction_id}",
+                "machine_id": p.machine_id,
+                "failure_signature": f"[PREDICTION] Predicted failure: {p.predicted_failure} (Probability: {int(p.failure_probability * 100) if p.failure_probability <= 1.0 else int(p.failure_probability)}%)",
+                "action_taken": f"Estimated time to failure: {p.time_to_failure}",
+                "outcome": "Predicted",
+                "date": p.created_at.isoformat() + "Z" if p.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        # Format recommendations
+        for r in recs:
+            local_docs.append({
+                "id": f"rec-{r.recommendation_id}",
+                "machine_id": r.machine_id,
+                "failure_signature": f"[RECOMMENDATION] Prescriptive mitigation: {r.recommendation}",
+                "action_taken": f"Priority: {r.priority} (Confidence: {r.confidence:.1f}%)",
+                "outcome": "Prescribed",
+                "date": r.created_at.isoformat() + "Z" if r.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        # Format work orders
+        for wo in work_orders:
+            local_docs.append({
+                "id": f"wo-{wo.id}",
+                "machine_id": wo.machine_id,
+                "failure_signature": f"[WORK ORDER] Action required: {wo.action_required}",
+                "action_taken": f"Priority: {wo.priority} (Status: {wo.status})",
+                "outcome": f"Scheduled - {wo.status.capitalize()}",
+                "date": wo.created_at.isoformat() + "Z" if wo.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        # Format alerts
+        for a in alerts:
+            local_docs.append({
+                "id": f"alert-{a.alert_id}",
+                "machine_id": a.machine_id,
+                "failure_signature": f"[ALERT] Message: {a.message}",
+                "action_taken": f"Severity: {a.severity}",
+                "outcome": "Active Alert",
+                "date": a.created_at.isoformat() + "Z" if a.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+    except Exception as db_err:
+        print(f"Warning: Failed to fetch local database records for search fallback: {db_err}")
+    finally:
+        db_sess.close()
+        
+    if query_clean == "*:*" or query_clean == "*" or not query_clean:
+        results = local_docs
     else:
-        for doc in static_incidents:
+        for doc in local_docs:
             text_pool = f"{doc.get('failure_signature', '')} {doc.get('action_taken', '')} {doc.get('outcome', '')} {doc.get('machine_id', '')}".lower()
             if query_clean in text_pool:
                 results.append(doc)
+                
     return {
         "numFound": len(results),
         "docs": results
@@ -726,6 +916,10 @@ def run_predictions_pipeline(limit: int = 100):
             count += 1
             
         db_sess.commit()
+        try:
+            sync_data_to_solr()
+        except Exception as solr_err:
+            print(f"Warning: Failed to sync pipeline data to Solr: {solr_err}")
         return count
     except Exception as e:
         db_sess.rollback()

@@ -22,9 +22,9 @@ sys.path.insert(0, os.path.join(workspace_dir, "src"))
 import pandas as pd
 from pathlib import Path
 
-from src.backend_copy.database.connection import SessionLocal
-from src.backend_copy.database.models import Machine, Prediction, Recommendation
-from src.backend_copy.services.db_service import predict_machine_failure
+from backend.database.connection import SessionLocal
+from backend.database.models import Machine, Prediction, Recommendation
+from backend.services.db_service import predict_machine_failure, sync_data_to_solr
 
 def run_predictions_pipeline(limit=100):
     print("=" * 80)
@@ -139,6 +139,13 @@ def run_predictions_pipeline(limit=100):
             
         db_sess.commit()
         print(f"✓ Pipeline run completed. Successfully processed and stored predictions/recommendations for {count} machines.")
+        
+        # Sync to Apache Solr
+        try:
+            sync_data_to_solr()
+            print("✓ Synchronized predictions/recommendations to Apache Solr.")
+        except Exception as solr_err:
+            print(f"Warning: Failed to sync pipeline data to Solr: {solr_err}")
         
     except Exception as e:
         db_sess.rollback()

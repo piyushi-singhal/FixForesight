@@ -2,10 +2,10 @@ import random
 from datetime import datetime, timedelta
 import sys
 import os
-from src.backend_copy.database.connection import SessionLocal
+from backend.database.connection import SessionLocal
 from sqlalchemy.exc import SQLAlchemyError
-from src.backend_copy.database import queries
-from src.backend_copy.database.models import Machine, Prediction, Recommendation, Alert, PartInventory, WorkOrder
+from backend.database import queries
+from backend.database.models import Machine, Prediction, Recommendation, Alert, PartInventory, WorkOrder
 
 try:
     from sqlalchemy.orm import Session
@@ -128,6 +128,7 @@ def predict_machine_failure(air_temp, proc_temp, speed, torque, wear):
             pass
             
     # Rule-based fallback if model is not available or errors out
+    # Deterministic calculation based on parameters to feel realistic
     prob = 0.05
     failure_type = "none"
     predicted_failure = "Normal Operation"
@@ -171,23 +172,22 @@ def get_machine_status_helper(status: str) -> str:
 def get_all_machines():
     db_sess = SessionLocal()
     try:
+        # Check if database is active by querying machines
         db_machines = queries.get_machines(db_sess)
         
         result = []
         for m in db_machines:
+            # Predict dynamically
             prob, pred_fail, failure_type, time_to_fail = predict_machine_failure(
                 m.air_temperature, m.process_temperature, m.rotational_speed, m.torque, m.tool_wear
             )
             
+            # Generate recommendation dynamically (STEP 8: Rule-based recommendation engine)
             rec_text = "No active recommendations. Machine operation normal."
-            if prob > 0.5 and recommendation_engine:
-                rec_obj = recommendation_engine.generate_recommendation(
-                    machine_id=int(m.machine_id.replace("M", "") or 1) if isinstance(m.machine_id, str) else m.machine_id,
-                    prediction_id=0,
-                    failure_type=failure_type,
-                    failure_probability=prob
-                )
-                rec_text = rec_obj.action.replace("• ", "").replace("\n", "; ")
+            if prob > 0.8:
+                rec_text = "Immediate Maintenance Required"
+            elif prob > 0.5:
+                rec_text = "Schedule preventive maintenance"
             
             result.append({
                 "machine_id": m.machine_id,
@@ -232,10 +232,12 @@ def get_all_recommendations():
         db_recs = queries.get_recommendations(db_sess)
         return [
             {
+                "recommendation_id": r.recommendation_id,
                 "machine_id": r.machine_id,
                 "recommendation": r.recommendation,
                 "priority": r.priority,
                 "confidence": r.confidence,
+                "prediction_id": r.prediction_id,
                 "created_at": r.created_at.isoformat() if isinstance(r.created_at, datetime) else str(r.created_at)
             } for r in db_recs
         ]
@@ -250,6 +252,7 @@ def get_all_work_orders():
             {
                 "id": w.id,
                 "machine_id": w.machine_id,
+                "recommendation_id": w.recommendation_id,
                 "status": w.status,
                 "priority": w.priority,
                 "action_required": w.action_required,
@@ -279,7 +282,7 @@ def get_all_alerts():
 def get_analytics():
     db_sess = SessionLocal()
     try:
-        from src.backend_copy.database.models import Machine, WorkOrder
+        from backend.database.models import Machine, WorkOrder
         db_machines = db_sess.query(Machine).all()
         
         healthy_count = 0
@@ -348,6 +351,7 @@ def get_machine_risk(machine_id: str):
             "time_to_failure": time_to_fail
         }
         
+        # Generate dynamic telemetry historical readings based on the machine's current readings
         hist = []
         for i in range(20, 0, -1):
             base_time = datetime.now() - timedelta(minutes=i*2)
@@ -443,15 +447,27 @@ def get_machine_recommendations(machine_id: str):
                     "unit_cost": inv_item.unit_cost
                 })
                 
-        rec_text = rec_obj.action.replace("• ", "").replace("\n", "; ") if rec_obj else "Schedule preventive maintenance"
-        priority = rec_obj.priority if rec_obj else "medium"
-        confidence = float(rec_obj.failure_probability * 100.0) if rec_obj else (prob * 100.0)
+        if prob > 0.8:
+            rec_text = "Immediate Maintenance Required"
+            priority = "Critical"
+        else:
+            rec_text = "Schedule preventive maintenance"
+            priority = "Medium"
+        confidence = float(prob * 100.0)
+        
+        # Get matching recommendation from DB if exists
+        db_rec = db_sess.query(Recommendation).filter(Recommendation.machine_id == machine_id).first()
+        recommendation_id = db_rec.recommendation_id if db_rec else None
+        prediction_id = db_rec.prediction_id if db_rec else None
+
         return {
+            "recommendation_id": recommendation_id,
             "machine_id": machine_id,
             "has_recommendation": True,
             "recommendation": rec_text,
             "priority": priority.capitalize(),
             "confidence": confidence,
+            "prediction_id": prediction_id,
             "parts_status": parts_status,
             "parts_missing": out_of_stock,
             "estimated_duration_hours": rec_obj.estimated_cost / 150.0 if rec_obj else 3.0,
@@ -460,18 +476,28 @@ def get_machine_recommendations(machine_id: str):
     finally:
         db_sess.close()
 
-def create_work_order(machine_id: str, priority: str, action_required: str):
+def create_work_order(machine_id: str = None, priority: str = None, action_required: str = None, recommendation_id: int = None):
     db_sess = SessionLocal()
     try:
+        if recommendation_id is not None:
+            rec = db_sess.query(Recommendation).filter(Recommendation.recommendation_id == recommendation_id).first()
+            if rec:
+                machine_id = rec.machine_id
+                priority = rec.priority
+                action_required = rec.recommendation
+                
+        # Create database work order
         db_wo = WorkOrder(
             machine_id=machine_id,
             status="open",
             priority=priority,
             action_required=action_required,
+            recommendation_id=recommendation_id,
             created_at=datetime.utcnow()
         )
         db_sess.add(db_wo)
         
+        # Mappings of standard parts based on recommendation
         parts_to_deduct = []
         if machine_id == "M101":
             parts_to_deduct = [("Rotary Bearing B-10", 1), ("Hydraulic Pump Seal", 2)]
@@ -485,22 +511,53 @@ def create_work_order(machine_id: str, priority: str, action_required: str):
             if part:
                 part.quantity = max(0, part.quantity - qty)
                 
+        # Reset prediction failure risk
         pred = db_sess.query(Prediction).filter(Prediction.machine_id == machine_id).first()
         if pred:
             pred.failure_probability = 5.0
             pred.predicted_failure = "Normal Operation"
             pred.time_to_failure = "N/A"
             
+        # Update machine status
         machine = db_sess.query(Machine).filter(Machine.machine_id == machine_id).first()
         if machine:
             machine.status = "Healthy"
             
-        rec = db_sess.query(Recommendation).filter(Recommendation.machine_id == machine_id).first()
-        if rec:
-            db_sess.delete(rec)
+        # Remove recommendation
+        if recommendation_id is not None:
+            rec = db_sess.query(Recommendation).filter(Recommendation.recommendation_id == recommendation_id).first()
+            if rec:
+                db_sess.delete(rec)
+        else:
+            rec = db_sess.query(Recommendation).filter(Recommendation.machine_id == machine_id).first()
+            if rec:
+                db_sess.delete(rec)
             
         db_sess.commit()
         db_sess.refresh(db_wo)
+        
+        # Real-time Solr indexing/updates
+        try:
+            if recommendation_id is not None:
+                delete_document_from_solr(f"rec-{recommendation_id}")
+            else:
+                delete_document_from_solr(f"rec-")
+                
+            wo_doc = {
+                "id": f"wo-{db_wo.id}",
+                "machine_id": db_wo.machine_id,
+                "failure_signature": f"[WORK ORDER] Action required: {db_wo.action_required}",
+                "action_taken": f"Priority: {db_wo.priority} (Status: {db_wo.status})",
+                "outcome": f"Scheduled - {db_wo.status.capitalize()}",
+                "date": db_wo.created_at.isoformat() + "Z" if db_wo.created_at else datetime.utcnow().isoformat() + "Z"
+            }
+            index_documents_in_solr([wo_doc])
+            
+            # Sync data to Solr to ensure all statuses/predictions/recommendations are up to date
+            sync_data_to_solr()
+        except Exception as solr_err:
+            print(f"Warning: Failed to update Solr for work order: {solr_err}")
+            
         return db_wo.id
     finally:
         db_sess.close()
@@ -517,7 +574,113 @@ def create_raw_alert(machine_id: str, severity: str, message: str):
         db_sess.add(db_alert)
         db_sess.commit()
         db_sess.refresh(db_alert)
+        
+        # Real-time Solr indexing/updates
+        try:
+            alert_doc = {
+                "id": f"alert-{db_alert.alert_id}",
+                "machine_id": db_alert.machine_id,
+                "failure_signature": f"[ALERT] Message: {db_alert.message}",
+                "action_taken": f"Severity: {db_alert.severity}",
+                "outcome": "Active Alert",
+                "date": db_alert.created_at.isoformat() + "Z" if db_alert.created_at else datetime.utcnow().isoformat() + "Z"
+            }
+            index_documents_in_solr([alert_doc])
+        except Exception as solr_err:
+            print(f"Warning: Failed to index alert in Solr: {solr_err}")
+            
         return db_alert.alert_id
+    finally:
+        db_sess.close()
+
+def index_documents_in_solr(docs: list):
+    import requests
+    solr_url = os.environ.get("SOLR_URL", "http://localhost:8983/solr/incidents")
+    try:
+        response = requests.post(
+            f"{solr_url}/update?commit=true",
+            json=docs,
+            headers={"Content-Type": "application/json"},
+            timeout=5.0
+        )
+        if response.status_code != 200:
+            print(f"Warning: Solr update failed with status {response.status_code}: {response.text}")
+    except Exception as e:
+        print(f"Warning: Failed to send documents to Solr: {e}")
+
+def delete_document_from_solr(doc_id: str):
+    import requests
+    solr_url = os.environ.get("SOLR_URL", "http://localhost:8983/solr/incidents")
+    try:
+        response = requests.post(
+            f"{solr_url}/update?commit=true",
+            json={"delete": {"id": doc_id}},
+            headers={"Content-Type": "application/json"},
+            timeout=5.0
+        )
+        if response.status_code != 200:
+            print(f"Warning: Solr delete failed with status {response.status_code}: {response.text}")
+    except Exception as e:
+        print(f"Warning: Failed to delete document from Solr: {e}")
+
+def sync_data_to_solr():
+    db_sess = SessionLocal()
+    try:
+        from backend.database.models import Prediction, Recommendation, WorkOrder, Alert
+        
+        preds = db_sess.query(Prediction).all()
+        recs = db_sess.query(Recommendation).all()
+        work_orders = db_sess.query(WorkOrder).all()
+        alerts = db_sess.query(Alert).all()
+        
+        docs = []
+        
+        # Format predictions
+        for p in preds:
+            docs.append({
+                "id": f"pred-{p.prediction_id}",
+                "machine_id": p.machine_id,
+                "failure_signature": f"[PREDICTION] Predicted failure: {p.predicted_failure} (Probability: {int(p.failure_probability * 100) if p.failure_probability <= 1.0 else int(p.failure_probability)}%)",
+                "action_taken": f"Estimated time to failure: {p.time_to_failure}",
+                "outcome": "Predicted",
+                "date": p.created_at.isoformat() + "Z" if p.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        # Format recommendations
+        for r in recs:
+            docs.append({
+                "id": f"rec-{r.recommendation_id}",
+                "machine_id": r.machine_id,
+                "failure_signature": f"[RECOMMENDATION] Prescriptive mitigation: {r.recommendation}",
+                "action_taken": f"Priority: {r.priority} (Confidence: {r.confidence:.1f}%)",
+                "outcome": "Prescribed",
+                "date": r.created_at.isoformat() + "Z" if r.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        # Format work orders
+        for wo in work_orders:
+            docs.append({
+                "id": f"wo-{wo.id}",
+                "machine_id": wo.machine_id,
+                "failure_signature": f"[WORK ORDER] Action required: {wo.action_required}",
+                "action_taken": f"Priority: {wo.priority} (Status: {wo.status})",
+                "outcome": f"Scheduled - {wo.status.capitalize()}",
+                "date": wo.created_at.isoformat() + "Z" if wo.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        # Format alerts
+        for a in alerts:
+            docs.append({
+                "id": f"alert-{a.alert_id}",
+                "machine_id": a.machine_id,
+                "failure_signature": f"[ALERT] Message: {a.message}",
+                "action_taken": f"Severity: {a.severity}",
+                "outcome": "Active Alert",
+                "date": a.created_at.isoformat() + "Z" if a.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        if docs:
+            index_documents_in_solr(docs)
     finally:
         db_sess.close()
 
@@ -555,14 +718,211 @@ def search_incidents(q: str):
         
     query_clean = q.lower().strip() if q else ""
     results = []
-    if query_clean == "*:*" or not query_clean:
-        results = static_incidents
+    
+    # Start with static historical incidents
+    local_docs = list(static_incidents)
+    
+    # Query database and format predictions, recommendations, work orders, and alerts
+    db_sess = SessionLocal()
+    try:
+        from backend.database.models import Prediction, Recommendation, WorkOrder, Alert
+        
+        preds = db_sess.query(Prediction).all()
+        recs = db_sess.query(Recommendation).all()
+        work_orders = db_sess.query(WorkOrder).all()
+        alerts = db_sess.query(Alert).all()
+        
+        # Format predictions
+        for p in preds:
+            local_docs.append({
+                "id": f"pred-{p.prediction_id}",
+                "machine_id": p.machine_id,
+                "failure_signature": f"[PREDICTION] Predicted failure: {p.predicted_failure} (Probability: {int(p.failure_probability * 100) if p.failure_probability <= 1.0 else int(p.failure_probability)}%)",
+                "action_taken": f"Estimated time to failure: {p.time_to_failure}",
+                "outcome": "Predicted",
+                "date": p.created_at.isoformat() + "Z" if p.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        # Format recommendations
+        for r in recs:
+            local_docs.append({
+                "id": f"rec-{r.recommendation_id}",
+                "machine_id": r.machine_id,
+                "failure_signature": f"[RECOMMENDATION] Prescriptive mitigation: {r.recommendation}",
+                "action_taken": f"Priority: {r.priority} (Confidence: {r.confidence:.1f}%)",
+                "outcome": "Prescribed",
+                "date": r.created_at.isoformat() + "Z" if r.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        # Format work orders
+        for wo in work_orders:
+            local_docs.append({
+                "id": f"wo-{wo.id}",
+                "machine_id": wo.machine_id,
+                "failure_signature": f"[WORK ORDER] Action required: {wo.action_required}",
+                "action_taken": f"Priority: {wo.priority} (Status: {wo.status})",
+                "outcome": f"Scheduled - {wo.status.capitalize()}",
+                "date": wo.created_at.isoformat() + "Z" if wo.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+            
+        # Format alerts
+        for a in alerts:
+            local_docs.append({
+                "id": f"alert-{a.alert_id}",
+                "machine_id": a.machine_id,
+                "failure_signature": f"[ALERT] Message: {a.message}",
+                "action_taken": f"Severity: {a.severity}",
+                "outcome": "Active Alert",
+                "date": a.created_at.isoformat() + "Z" if a.created_at else datetime.utcnow().isoformat() + "Z"
+            })
+    except Exception as db_err:
+        print(f"Warning: Failed to fetch local database records for search fallback: {db_err}")
+    finally:
+        db_sess.close()
+        
+    if query_clean == "*:*" or query_clean == "*" or not query_clean:
+        results = local_docs
     else:
-        for doc in static_incidents:
+        for doc in local_docs:
             text_pool = f"{doc.get('failure_signature', '')} {doc.get('action_taken', '')} {doc.get('outcome', '')} {doc.get('machine_id', '')}".lower()
             if query_clean in text_pool:
                 results.append(doc)
+                
     return {
         "numFound": len(results),
         "docs": results
     }
+
+def run_predictions_pipeline(limit: int = 100):
+    import pandas as pd
+    
+    # Locate dataset
+    data_path = os.path.join(base_dir, "data", "engineered_ai4i.csv")
+    if not os.path.exists(data_path):
+        data_path = os.path.join(base_dir, "data", "ai4i2020_cleaned.csv")
+        
+    if not os.path.exists(data_path):
+        raise FileNotFoundError(f"Telemetry dataset not found at {data_path}")
+        
+    df = pd.read_csv(data_path)
+    
+    # Rename columns to snake_case
+    df = df.rename(columns={
+        "Air temperature [K]": "air_temperature",
+        "Process temperature [K]": "process_temperature",
+        "Rotational speed [rpm]": "rotational_speed",
+        "Torque [Nm]": "torque",
+        "Tool wear [min]": "tool_wear",
+        "Machine failure": "failure"
+    })
+    
+    db_sess = SessionLocal()
+    try:
+        # Clear existing tables to ensure a fresh import
+        db_sess.query(Recommendation).delete()
+        db_sess.query(Prediction).delete()
+        db_sess.query(Machine).delete()
+        db_sess.commit()
+        
+        count = 0
+        for idx, row in df.head(limit).iterrows():
+            udi = int(row.get("UDI", idx + 1))
+            machine_id = f"M{100 + udi}"
+            
+            air_temp = float(row["air_temperature"])
+            proc_temp = float(row["process_temperature"])
+            speed = int(row["rotational_speed"])
+            torque = float(row["torque"])
+            wear = float(row["tool_wear"])
+            
+            prob, pred_fail, failure_type, time_to_fail = predict_machine_failure(
+                air_temp, proc_temp, speed, torque, wear
+            )
+            
+            status = "Healthy"
+            if prob > 0.8:
+                status = "Critical"
+            elif prob > 0.4:
+                status = "Warning"
+                
+            existing_m = db_sess.query(Machine).filter(Machine.machine_id == machine_id).first()
+            if existing_m:
+                existing_m.machine_name = f"Machine {row.get('Product ID', machine_id)}"
+                existing_m.status = status
+                existing_m.air_temperature = air_temp
+                existing_m.process_temperature = proc_temp
+                existing_m.rotational_speed = speed
+                existing_m.torque = torque
+                existing_m.tool_wear = wear
+            else:
+                m = Machine(
+                    machine_id=machine_id,
+                    machine_name=f"Machine {row.get('Product ID', machine_id)}",
+                    status=status,
+                    air_temperature=air_temp,
+                    process_temperature=proc_temp,
+                    rotational_speed=speed,
+                    torque=torque,
+                    tool_wear=wear
+                )
+                db_sess.add(m)
+            db_sess.flush()
+            
+            existing_pred = db_sess.query(Prediction).filter(Prediction.machine_id == machine_id).first()
+            if existing_pred:
+                existing_pred.failure_probability = prob * 100.0
+                existing_pred.predicted_failure = pred_fail
+                existing_pred.time_to_failure = time_to_fail
+                pred = existing_pred
+            else:
+                pred = Prediction(
+                    machine_id=machine_id,
+                    failure_probability=prob * 100.0,
+                    predicted_failure=pred_fail,
+                    time_to_failure=time_to_fail
+                )
+                db_sess.add(pred)
+            db_sess.flush()
+            
+            # Recommendation Engine (STEP 8: Rule-based recommendation engine)
+            recommendation_text = "No active recommendations. Machine operation normal."
+            priority = "Low"
+            confidence = prob * 100.0
+            
+            # Apply rule-based thresholds (STEP 8)
+            if prob > 0.8:
+                recommendation_text = "Immediate Maintenance Required"
+                priority = "Critical"
+            elif prob > 0.5:
+                recommendation_text = "Schedule preventive maintenance"
+                priority = "Medium"
+                
+            existing_rec = db_sess.query(Recommendation).filter(Recommendation.machine_id == machine_id).first()
+            if existing_rec:
+                existing_rec.recommendation = recommendation_text
+                existing_rec.priority = priority
+                existing_rec.confidence = confidence
+                existing_rec.prediction_id = pred.prediction_id
+            else:
+                rec = Recommendation(
+                    machine_id=machine_id,
+                    prediction_id=pred.prediction_id,
+                    recommendation=recommendation_text,
+                    priority=priority,
+                    confidence=confidence
+                )
+                db_sess.add(rec)
+            
+            count += 1
+            
+        db_sess.commit()
+        try:
+            sync_data_to_solr()
+        except Exception as solr_err:
+            print(f"Warning: Failed to sync pipeline data to Solr: {solr_err}")
+        return count
+    except Exception as e:
+        db_sess.rollback()
+        raise e
+    finally:
+        db_sess.close()
