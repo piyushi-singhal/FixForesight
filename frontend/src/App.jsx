@@ -222,7 +222,8 @@ export default function App() {
     dispatch(createWorkOrder({
       machineId: activeId,
       priority: rec.priority,
-      actionRequired: rec.recommendation
+      actionRequired: rec.recommendation,
+      recommendationId: rec.recommendation_id
     }));
   };
 

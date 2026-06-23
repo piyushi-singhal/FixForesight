@@ -128,6 +128,7 @@ def run_predictions_pipeline(limit=100):
                 
             rec = Recommendation(
                 machine_id=machine_id,
+                prediction_id=pred.prediction_id,
                 recommendation=recommendation_text,
                 priority=priority,
                 confidence=confidence

@@ -31,9 +31,9 @@ export const fetchWorkOrders = createAsyncThunk(
 
 export const createWorkOrder = createAsyncThunk(
   'workOrders/createWorkOrder',
-  async ({ machineId, priority, actionRequired }: { machineId: string; priority: string; actionRequired: string }, { rejectWithValue }) => {
+  async ({ machineId, priority, actionRequired, recommendationId }: { machineId: string; priority: string; actionRequired: string; recommendationId?: number }, { rejectWithValue }) => {
     try {
-      return await workOrderService.createWorkOrder(machineId, priority, actionRequired);
+      return await workOrderService.createWorkOrder(machineId, priority, actionRequired, recommendationId);
     } catch (err: any) {
       return rejectWithValue(err.message);
     }

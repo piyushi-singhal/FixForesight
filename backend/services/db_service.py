@@ -232,10 +232,12 @@ def get_all_recommendations():
         db_recs = queries.get_recommendations(db_sess)
         return [
             {
+                "recommendation_id": r.recommendation_id,
                 "machine_id": r.machine_id,
                 "recommendation": r.recommendation,
                 "priority": r.priority,
                 "confidence": r.confidence,
+                "prediction_id": r.prediction_id,
                 "created_at": r.created_at.isoformat() if isinstance(r.created_at, datetime) else str(r.created_at)
             } for r in db_recs
         ]
@@ -250,6 +252,7 @@ def get_all_work_orders():
             {
                 "id": w.id,
                 "machine_id": w.machine_id,
+                "recommendation_id": w.recommendation_id,
                 "status": w.status,
                 "priority": w.priority,
                 "action_required": w.action_required,
@@ -451,12 +454,20 @@ def get_machine_recommendations(machine_id: str):
             rec_text = "Schedule preventive maintenance"
             priority = "Medium"
         confidence = float(prob * 100.0)
+        
+        # Get matching recommendation from DB if exists
+        db_rec = db_sess.query(Recommendation).filter(Recommendation.machine_id == machine_id).first()
+        recommendation_id = db_rec.recommendation_id if db_rec else None
+        prediction_id = db_rec.prediction_id if db_rec else None
+
         return {
+            "recommendation_id": recommendation_id,
             "machine_id": machine_id,
             "has_recommendation": True,
             "recommendation": rec_text,
             "priority": priority.capitalize(),
             "confidence": confidence,
+            "prediction_id": prediction_id,
             "parts_status": parts_status,
             "parts_missing": out_of_stock,
             "estimated_duration_hours": rec_obj.estimated_cost / 150.0 if rec_obj else 3.0,
@@ -465,15 +476,23 @@ def get_machine_recommendations(machine_id: str):
     finally:
         db_sess.close()
 
-def create_work_order(machine_id: str, priority: str, action_required: str):
+def create_work_order(machine_id: str = None, priority: str = None, action_required: str = None, recommendation_id: int = None):
     db_sess = SessionLocal()
     try:
+        if recommendation_id is not None:
+            rec = db_sess.query(Recommendation).filter(Recommendation.recommendation_id == recommendation_id).first()
+            if rec:
+                machine_id = rec.machine_id
+                priority = rec.priority
+                action_required = rec.recommendation
+                
         # Create database work order
         db_wo = WorkOrder(
             machine_id=machine_id,
             status="open",
             priority=priority,
             action_required=action_required,
+            recommendation_id=recommendation_id,
             created_at=datetime.utcnow()
         )
         db_sess.add(db_wo)
@@ -505,9 +524,14 @@ def create_work_order(machine_id: str, priority: str, action_required: str):
             machine.status = "Healthy"
             
         # Remove recommendation
-        rec = db_sess.query(Recommendation).filter(Recommendation.machine_id == machine_id).first()
-        if rec:
-            db_sess.delete(rec)
+        if recommendation_id is not None:
+            rec = db_sess.query(Recommendation).filter(Recommendation.recommendation_id == recommendation_id).first()
+            if rec:
+                db_sess.delete(rec)
+        else:
+            rec = db_sess.query(Recommendation).filter(Recommendation.machine_id == machine_id).first()
+            if rec:
+                db_sess.delete(rec)
             
         db_sess.commit()
         db_sess.refresh(db_wo)
@@ -659,6 +683,7 @@ def run_predictions_pipeline(limit: int = 100):
                 existing_pred.failure_probability = prob * 100.0
                 existing_pred.predicted_failure = pred_fail
                 existing_pred.time_to_failure = time_to_fail
+                pred = existing_pred
             else:
                 pred = Prediction(
                     machine_id=machine_id,
@@ -687,9 +712,11 @@ def run_predictions_pipeline(limit: int = 100):
                 existing_rec.recommendation = recommendation_text
                 existing_rec.priority = priority
                 existing_rec.confidence = confidence
+                existing_rec.prediction_id = pred.prediction_id
             else:
                 rec = Recommendation(
                     machine_id=machine_id,
+                    prediction_id=pred.prediction_id,
                     recommendation=recommendation_text,
                     priority=priority,
                     confidence=confidence

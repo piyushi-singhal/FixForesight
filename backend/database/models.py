@@ -33,18 +33,22 @@ class Prediction(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     machine = relationship("Machine", back_populates="predictions")
+    recommendation = relationship("Recommendation", back_populates="prediction", cascade="all, delete-orphan", uselist=False)
 
 class Recommendation(Base):
     __tablename__ = "recommendations"
     
     recommendation_id = Column(Integer, primary_key=True, autoincrement=True)
     machine_id = Column(String(50), ForeignKey("machines.machine_id", ondelete="CASCADE"))
+    prediction_id = Column(Integer, ForeignKey("predictions.prediction_id", ondelete="CASCADE"), nullable=True)
     recommendation = Column(Text, nullable=False)
     priority = Column(String(50), nullable=False)
     confidence = Column(Float, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     machine = relationship("Machine", back_populates="recommendations")
+    prediction = relationship("Prediction", back_populates="recommendation")
+    work_orders = relationship("WorkOrder", back_populates="recommendation")
 
 class Alert(Base):
     __tablename__ = "alerts"
@@ -71,6 +75,7 @@ class WorkOrder(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     machine_id = Column(String(50), ForeignKey("machines.machine_id", ondelete="CASCADE"))
+    recommendation_id = Column(Integer, ForeignKey("recommendations.recommendation_id", ondelete="SET NULL"), nullable=True)
     status = Column(String(50), nullable=False, default="open")
     priority = Column(String(50), nullable=False)
     action_required = Column(Text, nullable=False)
@@ -78,3 +83,4 @@ class WorkOrder(Base):
     completed_at = Column(DateTime, nullable=True)
 
     machine = relationship("Machine", back_populates="work_orders")
+    recommendation = relationship("Recommendation", back_populates="work_orders")

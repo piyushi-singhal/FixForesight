@@ -1531,8 +1531,7 @@
             document.getElementById('search-results-heading').textContent = 'Search Results';
         });
 
-        // Authorize Work Order from Recommendations page or Machines page
-        async function authorizeWorkOrder(machineId, priority, recommendationText) {
+        async function authorizeWorkOrder(machineId, priority, recommendationText, recommendationId = null) {
             try {
                 const r = await fetch(`${API_BASE}/work-orders`, {
                     method: 'POST',
@@ -1540,7 +1539,8 @@
                     body: JSON.stringify({
                         machine_id: machineId,
                         priority: priority,
-                        action_required: recommendationText
+                        action_required: recommendationText,
+                        recommendation_id: recommendationId
                     })
                 });
                 if (r.ok) {
@@ -2190,7 +2190,7 @@
                     </span>
                     <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
                         ${rec.parts_missing ? `<span style="font-size:10px; color:var(--danger); font-weight:600; display:flex; align-items:center; gap:2px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg> Parts short stock warning</span>` : ''}
-                        <button class="btn-action" id="btn-wo-authorize" onclick="authorizeWorkOrder('${activeId}', '${rec.priority}', '${rec.recommendation.replace(/'/g, "\\'")}')">
+                        <button class="btn-action" id="btn-wo-authorize" onclick="authorizeWorkOrder('${activeId}', '${rec.priority}', '${rec.recommendation.replace(/'/g, "\\'")}', ${rec.recommendation_id || 'null'})">
                             Authorize Corrective Work Order
                         </button>
                     </div>

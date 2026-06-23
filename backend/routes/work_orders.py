@@ -11,5 +11,10 @@ def get_work_orders():
 
 @router.post("/work-orders")
 def post_work_order(req: WorkOrderRequest):
-    wo_id = db_service.create_work_order(req.machine_id, req.priority, req.action_required)
+    wo_id = db_service.create_work_order(
+        machine_id=req.machine_id,
+        priority=req.priority,
+        action_required=req.action_required,
+        recommendation_id=req.recommendation_id
+    )
     return {"status": "created", "work_order_id": wo_id}

@@ -1,0 +1,13 @@
+{
+  "status": "success",
+  "promoted_recommendation_id": 51,
+  "work_order_created": true,
+  "work_order_id": 2,
+  "work_order_recommendation_id": 51,
+  "work_order_priority": "Critical",
+  "work_order_action_required": "Immediate Maintenance Required",
+  "recommendation_deleted": true,
+  "machine_status_updated": true,
+  "prediction_reset": true,
+  "timestamp": "2026-06-23 19:23:50.944126"
+}

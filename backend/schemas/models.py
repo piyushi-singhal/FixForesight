@@ -24,15 +24,18 @@ class PredictionResponse(BaseModel):
     time_to_failure: str
 
 class RecommendationResponse(BaseModel):
+    recommendation_id: Optional[int] = None
     machine_id: str
     recommendation: str
     priority: str
     confidence: float
+    prediction_id: Optional[int] = None
     created_at: str
 
 class WorkOrderResponse(BaseModel):
     id: int
     machine_id: str
+    recommendation_id: Optional[int] = None
     status: str
     priority: str
     action_required: str
@@ -64,9 +67,10 @@ class DashboardResponse(BaseModel):
     critical_alerts_count: int
 
 class WorkOrderRequest(BaseModel):
-    machine_id: str
-    priority: str
-    action_required: str
+    machine_id: Optional[str] = None
+    priority: Optional[str] = None
+    action_required: Optional[str] = None
+    recommendation_id: Optional[int] = None
 
 
 class AlertWebhookRequest(BaseModel):
