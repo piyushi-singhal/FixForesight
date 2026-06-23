@@ -1,46 +1,55 @@
--- FixForesight PostgreSQL Database Schema
+-- FixForesight PostgreSQL Database Schema (Contract Aligned)
 
--- Drop tables if they exist (clean setup)
 DROP TABLE IF EXISTS alerts CASCADE;
 DROP TABLE IF EXISTS recommendations CASCADE;
 DROP TABLE IF EXISTS predictions CASCADE;
-DROP TABLE IF EXISTS parts_inventory CASCADE;
 DROP TABLE IF EXISTS work_orders CASCADE;
-DROP TABLE IF EXISTS sensor_readings CASCADE;
+DROP TABLE IF EXISTS parts_inventory CASCADE;
+DROP TABLE IF EXISTS machines CASCADE;
 
--- 1. Sensor Readings (Raw IoT data stream target)
-CREATE TABLE sensor_readings (
-    id SERIAL PRIMARY KEY,
-    machine_id INT NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    temperature DOUBLE PRECISION,
-    vibration DOUBLE PRECISION,
-    pressure DOUBLE PRECISION,
-    error_code VARCHAR(50)
+-- 1. Machines Directory Table
+CREATE TABLE machines (
+    machine_id VARCHAR(50) PRIMARY KEY,
+    machine_name VARCHAR(100) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    air_temperature DOUBLE PRECISION NOT NULL,
+    process_temperature DOUBLE PRECISION NOT NULL,
+    rotational_speed INT NOT NULL,
+    torque DOUBLE PRECISION NOT NULL,
+    tool_wear DOUBLE PRECISION NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Predictions (Output from TensorFlow failure prediction model)
+-- 2. Predictions Table (TensorFlow output target)
 CREATE TABLE predictions (
-    id SERIAL PRIMARY KEY,
-    machine_id INT NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    failure_probability DOUBLE PRECISION NOT NULL, -- 0.0 to 1.0
-    predicted_failure_type VARCHAR(100), -- 'Bearing Failure', 'Overheating', 'Pressure Valve Leak', etc.
-    time_to_failure_hours INT -- Estimated hours remaining before failure
+    prediction_id SERIAL PRIMARY KEY,
+    machine_id VARCHAR(50) REFERENCES machines(machine_id) ON DELETE CASCADE,
+    failure_probability DOUBLE PRECISION NOT NULL, -- 0.0 to 100.0 (or 0.0 to 1.0, contract specifies 82 as 82%)
+    predicted_failure VARCHAR(255) NOT NULL, -- 'Bearing Failure', etc.
+    time_to_failure VARCHAR(100) NOT NULL, -- '5 Days', etc.
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Work Orders (Current and historical corrective task logs)
-CREATE TABLE work_orders (
-    id SERIAL PRIMARY KEY,
-    machine_id INT NOT NULL,
-    status VARCHAR(50) NOT NULL DEFAULT 'open', -- 'open', 'in_progress', 'completed', 'cancelled'
-    priority VARCHAR(50) NOT NULL, -- 'low', 'medium', 'high', 'critical'
-    action_required TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    completed_at TIMESTAMP
+-- 3. Recommendations Table (Recommendation model output)
+CREATE TABLE recommendations (
+    recommendation_id SERIAL PRIMARY KEY,
+    machine_id VARCHAR(50) REFERENCES machines(machine_id) ON DELETE CASCADE,
+    recommendation TEXT NOT NULL, -- 'Replace Bearing', etc.
+    priority VARCHAR(50) NOT NULL, -- 'High', etc.
+    confidence DOUBLE PRECISION NOT NULL, -- 0.0 to 100.0
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 4. Parts Inventory (Spare parts stock management)
+-- 4. Alerts Table (SNS/SQS alerts receiver)
+CREATE TABLE alerts (
+    alert_id SERIAL PRIMARY KEY,
+    machine_id VARCHAR(50) REFERENCES machines(machine_id) ON DELETE CASCADE,
+    severity VARCHAR(50) NOT NULL, -- 'Critical', etc.
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 5. Parts Inventory (Spare parts stock management)
 CREATE TABLE parts_inventory (
     part_id SERIAL PRIMARY KEY,
     part_name VARCHAR(100) NOT NULL UNIQUE,
@@ -49,30 +58,19 @@ CREATE TABLE parts_inventory (
     unit_cost DOUBLE PRECISION NOT NULL
 );
 
--- 5. Recommendations (Output from Recommendation model matching failures to parts and actions)
-CREATE TABLE recommendations (
+-- 6. Work Orders (Mitigation task logging)
+CREATE TABLE work_orders (
     id SERIAL PRIMARY KEY,
-    prediction_id INT REFERENCES predictions(id) ON DELETE CASCADE,
-    machine_id INT NOT NULL,
-    recommended_action TEXT NOT NULL,
-    required_parts JSONB NOT NULL, -- e.g., [{"part_name": "High-Temp Gasket", "quantity": 2}]
-    maintenance_priority VARCHAR(50) NOT NULL, -- 'low', 'medium', 'high', 'critical'
-    estimated_duration_hours DOUBLE PRECISION NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    machine_id VARCHAR(50) REFERENCES machines(machine_id) ON DELETE CASCADE,
+    status VARCHAR(50) NOT NULL DEFAULT 'open', -- 'open', 'in_progress', 'completed'
+    priority VARCHAR(50) NOT NULL,
+    action_required TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP
 );
 
--- 6. System Alerts (Sourced from SNS topics / notifications)
-CREATE TABLE alerts (
-    id SERIAL PRIMARY KEY,
-    message_id VARCHAR(100),
-    topic_arn VARCHAR(255),
-    subject VARCHAR(255),
-    message TEXT NOT NULL,
-    received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Indexes for performance optimization
-CREATE INDEX idx_sensor_readings_machine ON sensor_readings(machine_id, timestamp DESC);
-CREATE INDEX idx_predictions_machine ON predictions(machine_id, timestamp DESC);
+-- Indexes for performance
+CREATE INDEX idx_predictions_machine ON predictions(machine_id);
 CREATE INDEX idx_recommendations_machine ON recommendations(machine_id);
+CREATE INDEX idx_alerts_machine ON alerts(machine_id);
 CREATE INDEX idx_work_orders_machine ON work_orders(machine_id);
