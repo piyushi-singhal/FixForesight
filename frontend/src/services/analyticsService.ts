@@ -4,6 +4,11 @@ export interface AnalyticsResponse {
   healthy: number;
   warning: number;
   critical: number;
+  healthy_machines: number;
+  warning_machines: number;
+  critical_machines: number;
+  open_work_orders: number;
+  completed_work_orders: number;
 }
 
 export const getAnalytics = async (): Promise<AnalyticsResponse> => {

@@ -1,0 +1,69 @@
+{
+  "status": "success",
+  "processed_records": 100,
+  "predictions_sample": [
+    {
+      "machine_id": "M101",
+      "failure_probability": 0.08340829475406941,
+      "predicted_failure": "Normal Operation",
+      "time_to_failure": "N/A"
+    },
+    {
+      "machine_id": "M102",
+      "failure_probability": 0.13090958224522556,
+      "predicted_failure": "Normal Operation",
+      "time_to_failure": "N/A"
+    },
+    {
+      "machine_id": "M103",
+      "failure_probability": 0.09859578917374966,
+      "predicted_failure": "Normal Operation",
+      "time_to_failure": "N/A"
+    },
+    {
+      "machine_id": "M104",
+      "failure_probability": 0.10322269729675139,
+      "predicted_failure": "Normal Operation",
+      "time_to_failure": "N/A"
+    },
+    {
+      "machine_id": "M105",
+      "failure_probability": 0.10322269729675139,
+      "predicted_failure": "Normal Operation",
+      "time_to_failure": "N/A"
+    }
+  ],
+  "recommendations_sample": [
+    {
+      "machine_id": "M101",
+      "recommendation": "No active recommendations. Machine operation normal.",
+      "priority": "Low",
+      "confidence": 0.08340829475406941
+    },
+    {
+      "machine_id": "M102",
+      "recommendation": "No active recommendations. Machine operation normal.",
+      "priority": "Low",
+      "confidence": 0.13090958224522556
+    },
+    {
+      "machine_id": "M103",
+      "recommendation": "No active recommendations. Machine operation normal.",
+      "priority": "Low",
+      "confidence": 0.09859578917374966
+    },
+    {
+      "machine_id": "M104",
+      "recommendation": "No active recommendations. Machine operation normal.",
+      "priority": "Low",
+      "confidence": 0.10322269729675139
+    },
+    {
+      "machine_id": "M105",
+      "recommendation": "No active recommendations. Machine operation normal.",
+      "priority": "Low",
+      "confidence": 0.10322269729675139
+    }
+  ],
+  "timestamp": "2026-06-23 16:30:02.171507"
+}

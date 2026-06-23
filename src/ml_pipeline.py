@@ -18,9 +18,14 @@ from sklearn.metrics import (
     f1_score,
     accuracy_score,
 )
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
+HAS_TENSORFLOW = False
+try:
+    import tensorflow as tf
+    from tensorflow import keras
+    from tensorflow.keras import layers
+    HAS_TENSORFLOW = True
+except ImportError:
+    pass
 import pickle
 import json
 from pathlib import Path
@@ -135,7 +140,7 @@ class PredictiveMaintenanceModel:
         Initialize model.
 
         Args:
-            model_type: 'random_forest', 'gradient_boosting', or 'lstm'
+            model_type: 'random_forest', 'gradient_boosting', 'lstm', or 'keras'
         """
         self.model_type = model_type
         self.model = None
@@ -167,6 +172,8 @@ class PredictiveMaintenanceModel:
 
     def _create_lstm(self, input_shape: tuple):
         """Create LSTM model for sequence prediction."""
+        if not HAS_TENSORFLOW:
+            raise ImportError("TensorFlow/Keras is required to create or run an LSTM model, but it is not installed.")
         model = keras.Sequential(
             [
                 layers.LSTM(64, activation="relu", input_shape=input_shape, return_sequences=True),
@@ -180,6 +187,28 @@ class PredictiveMaintenanceModel:
         )
         model.compile(
             optimizer="adam", loss="binary_crossentropy", metrics=["accuracy", keras.metrics.AUC()]
+        )
+        return model
+
+    def _create_keras_model(self, input_dim: int):
+        """Create a Keras feedforward neural network for tabular prediction."""
+        if not HAS_TENSORFLOW:
+            raise ImportError("TensorFlow/Keras is required to create a Keras model, but it is not installed.")
+        model = keras.Sequential(
+            [
+                layers.Dense(64, activation="relu", input_dim=input_dim),
+                layers.Dropout(0.2),
+                layers.Dense(32, activation="relu"),
+                layers.Dropout(0.2),
+                layers.Dense(16, activation="relu"),
+                layers.Dropout(0.2),
+                layers.Dense(1, activation="sigmoid"),
+            ]
+        )
+        model.compile(
+            optimizer="adam",
+            loss="binary_crossentropy",
+            metrics=["accuracy"]
         )
         return model
 
@@ -197,28 +226,36 @@ class PredictiveMaintenanceModel:
         Returns:
             Tuple of (X_train, X_test, y_train, y_test)
         """
+        # Explicitly map unit-named columns from the original dataset format
+        mapping = {
+            "Air temperature [K]": "air_temperature",
+            "Process temperature [K]": "process_temperature",
+            "Rotational speed [rpm]": "rotational_speed",
+            "Torque [Nm]": "torque",
+            "Tool wear [min]": "tool_wear",
+            "Machine failure": "failure"
+        }
+        for orig, clean in mapping.items():
+            if clean not in df.columns and orig in df.columns:
+                df[clean] = df[orig]
+
         # Handle missing target column
         if target_col not in df.columns:
             print(f"Warning: {target_col} not found. Creating synthetic target...")
-            # Create synthetic failure indicator based on anomalies
-            if "is_anomalous" in df.columns:
-                df[target_col] = df["is_anomalous"].astype(int)
-            else:
-                # Use tool wear > 180 as failure indicator
-                df[target_col] = (df["tool_wear"] > 180).astype(int)
+            # Use tool wear > 180 as failure indicator
+            df[target_col] = (df["tool_wear"] > 180).astype(int)
 
-        # Select features (exclude non-numeric and target columns)
-        exclude_cols = {
-            "timestamp",
-            "machine_id",
-            target_col,
-            "status",
-            "is_anomalous",
-            "failure_type",
-        }
-        feature_cols = [col for col in df.columns if col not in exclude_cols and pd.api.types.is_numeric_dtype(df[col])]
+        # Enforce using exactly the 5 telemetry features specified in the dataset contract
+        feature_cols = [
+            "air_temperature",
+            "process_temperature",
+            "rotational_speed",
+            "torque",
+            "tool_wear"
+        ]
 
         self.feature_names = feature_cols
+        print(f"Training features selected: {self.feature_names}")
 
         X = df[feature_cols].fillna(0)
         y = df[target_col].astype(int)
@@ -259,15 +296,30 @@ class PredictiveMaintenanceModel:
             )
             self.training_history = history.history
 
+        elif self.model_type == "keras":
+            self.model = self._create_keras_model(input_dim=X_train.shape[1])
+            history = self.model.fit(
+                X_train,
+                y_train,
+                epochs=20,
+                batch_size=32,
+                validation_split=0.2,
+                verbose=0,
+            )
+            self.training_history = history.history
+
         print("✓ Model training completed")
 
     def evaluate(self, X_test, y_test) -> dict:
         """Evaluate model performance."""
         print("\nEvaluating model...")
 
-        if self.model_type == "lstm":
-            X_test_lstm = X_test.reshape((X_test.shape[0], 1, X_test.shape[1]))
-            y_pred_proba = self.model.predict(X_test_lstm, verbose=0).flatten()
+        if self.model_type in ["lstm", "keras"]:
+            if self.model_type == "lstm":
+                X_test_lstm = X_test.reshape((X_test.shape[0], 1, X_test.shape[1]))
+                y_pred_proba = self.model.predict(X_test_lstm, verbose=0).flatten()
+            else:
+                y_pred_proba = self.model.predict(X_test, verbose=0).flatten()
         else:
             y_pred_proba = self.model.predict_proba(X_test)[:, 1]
 
@@ -296,9 +348,12 @@ class PredictiveMaintenanceModel:
         if self.model is None:
             raise ValueError("Model not trained yet")
 
-        if self.model_type == "lstm":
-            X_lstm = X.reshape((X.shape[0], 1, X.shape[1]))
-            return self.model.predict(X_lstm, verbose=0).flatten()
+        if self.model_type in ["lstm", "keras"]:
+            if self.model_type == "lstm":
+                X_lstm = X.reshape((X.shape[0], 1, X.shape[1]))
+                return self.model.predict(X_lstm, verbose=0).flatten()
+            else:
+                return self.model.predict(X, verbose=0).flatten()
         else:
             return self.model.predict_proba(X)[:, 1]
 
@@ -309,7 +364,9 @@ class PredictiveMaintenanceModel:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         model_name = f"{self.model_type}_{timestamp}"
 
-        if self.model_type == "lstm":
+        if self.model_type in ["lstm", "keras"]:
+            if not HAS_TENSORFLOW:
+                raise ImportError(f"TensorFlow/Keras is required to save a {self.model_type} model, but it is not installed.")
             model_path = Path(output_dir) / f"{model_name}.h5"
             self.model.save(model_path)
         else:
@@ -335,7 +392,9 @@ class PredictiveMaintenanceModel:
 
     def load_model(self, model_path: str):
         """Load a trained model."""
-        if self.model_type == "lstm":
+        if self.model_type in ["lstm", "keras"]:
+            if not HAS_TENSORFLOW:
+                raise ImportError(f"TensorFlow/Keras is required to load a {self.model_type} model, but it is not installed.")
             self.model = keras.models.load_model(model_path)
         else:
             with open(model_path, "rb") as f:
@@ -370,6 +429,8 @@ def main():
 
     # 3. Train models
     models_to_train = ["gradient_boosting", "random_forest"]
+    if HAS_TENSORFLOW:
+        models_to_train.append("keras")
 
     for model_type in models_to_train:
         print(f"\n{'=' * 80}")
@@ -391,7 +452,23 @@ def main():
         metrics = model.evaluate(X_test, y_test)
 
         # Save
-        model.save_model("models")
+        saved_path = model.save_model("models")
+
+        # Copy keras model as best_model.h5 for deployment
+        if model_type == "keras":
+            import shutil
+            shutil.copy(saved_path, Path("models") / "best_model.h5")
+            # Copy its scaler
+            timestamp = saved_path.split("_")[-2] + "_" + saved_path.split("_")[-1].replace(".h5", "")
+            shutil.copy(Path("models") / f"keras_{timestamp}_scaler.pkl", Path("models") / "scaler.pkl")
+            print("✓ Copied Keras model to models/best_model.h5 and its scaler to models/scaler.pkl")
+        elif model_type == "gradient_boosting":
+            import shutil
+            shutil.copy(saved_path, Path("models") / "best_model.pkl")
+            # Copy its scaler
+            timestamp = saved_path.split("_")[-2] + "_" + saved_path.split("_")[-1].replace(".pkl", "")
+            shutil.copy(Path("models") / f"gradient_boosting_{timestamp}_scaler.pkl", Path("models") / "scaler.pkl")
+            print("✓ Copied Gradient Boosting model to models/best_model.pkl and its scaler to models/scaler.pkl")
 
     print("\n" + "=" * 80)
     print("ML Pipeline completed successfully!")

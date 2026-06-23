@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from backend.database.models import Machine, Prediction, Recommendation, Alert, PartInventory, WorkOrder
+from src.backend_copy.database.models import Machine, Prediction, Recommendation, Alert, PartInventory, WorkOrder
 from datetime import datetime
 
 def get_machines(db: Session):

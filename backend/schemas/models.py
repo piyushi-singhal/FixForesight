@@ -50,6 +50,11 @@ class AnalyticsResponse(BaseModel):
     healthy: int
     warning: int
     critical: int
+    healthy_machines: int
+    warning_machines: int
+    critical_machines: int
+    open_work_orders: int
+    completed_work_orders: int
 
 class DashboardResponse(BaseModel):
     total_machines: int
