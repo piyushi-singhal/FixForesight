@@ -11,6 +11,8 @@ class MachineResponse(BaseModel):
     failure_probability: float
     predicted_failure: str
     recommendation: str
+    created_at: Optional[str] = None
+
 
 class PredictionResponse(BaseModel):
     machine_id: str

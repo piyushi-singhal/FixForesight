@@ -263,11 +263,12 @@ export default function App() {
   };
 
   const isPointAnomaly = (tab, val) => {
-    if (tab === 'air_temperature' && val > 90.0) return true;
-    if (tab === 'process_temperature' && val > 95.0) return true;
-    if (tab === 'rotational_speed' && val > 3200) return true;
-    if (tab === 'torque' && val > 4.5) return true;
-    if (tab === 'tool_wear' && val > 10.0) return true;
+    if (tab === 'air_temperature' && val > 303.0) return true;
+    if (tab === 'process_temperature' && val > 313.0) return true;
+    if (tab === 'rotational_speed' && (val > 2200 || val < 1100)) return true;
+    if (tab === 'torque' && val > 65.0) return true;
+    if (tab === 'tool_wear' && val > 180.0) return true;
+    if (tab === 'failure_probability' && val > 50.0) return true;
     return false;
   };
 
@@ -569,12 +570,27 @@ export default function App() {
     const speed = machineObj ? machineObj.rotational_speed : 1500;
     const torque = machineObj ? machineObj.torque : 40.0;
     const toolWear = machineObj ? machineObj.tool_wear : 10.0;
+    const regDate = machineObj && machineObj.created_at ? new Date(machineObj.created_at).toLocaleDateString() : 'N/A';
 
     // Recommendation state
     const machineRec = rec; 
     
     // Filter work orders for this machine
     const machineWorkOrders = workOrders.filter((wo) => wo.machine_id === activeId);
+
+    // Dynamic warning indicators for progress bars
+    const getVitalBarWidth = (key, val) => {
+      if (key === 'air_temperature') return Math.min(100, Math.max(10, (val / 310.0) * 100));
+      if (key === 'process_temperature') return Math.min(100, Math.max(10, (val / 320.0) * 100));
+      if (key === 'rotational_speed') return Math.min(100, Math.max(10, (val / 2600.0) * 100));
+      if (key === 'torque') return Math.min(100, Math.max(10, (val / 80.0) * 100));
+      if (key === 'tool_wear') return Math.min(100, Math.max(10, (val / 240.0) * 100));
+      return 10;
+    };
+
+    const isVitalAnomalous = (key, val) => {
+      return isPointAnomaly(key, val);
+    };
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -608,65 +624,81 @@ export default function App() {
             {/* Machine General Info & Telemetry Grid */}
             <div className="glass-card">
               <h3 className="card-title" style={{ marginBottom: '16px' }}>Asset Specifications & Live Vitals</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid var(--border-glass)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid var(--border-glass)' }}>
                 <div>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Hardware ID</span>
-                  <div style={{ fontSize: '16px', fontWeight: 700, marginTop: '4px' }}>{activeId}</div>
+                  <div style={{ fontSize: '15px', fontWeight: 700, marginTop: '4px' }}>{activeId}</div>
                 </div>
                 <div>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Model Number</span>
-                  <div style={{ fontSize: '16px', fontWeight: 700, marginTop: '4px' }}>{mModel}</div>
+                  <div style={{ fontSize: '15px', fontWeight: 700, marginTop: '4px' }}>{mModel}</div>
                 </div>
                 <div>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Plant Location</span>
-                  <div style={{ fontSize: '16px', fontWeight: 700, marginTop: '4px' }}>{mLocation}</div>
+                  <div style={{ fontSize: '15px', fontWeight: 700, marginTop: '4px' }}>{mLocation}</div>
+                </div>
+                <div>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Registration Date</span>
+                  <div style={{ fontSize: '15px', fontWeight: 700, marginTop: '4px' }}>{regDate}</div>
                 </div>
               </div>
 
+              {/* Vitals Mini-Dashboard Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
-                  <span style={{ fontSize: '9px', color: 'var(--text-secondary)', fontWeight: 600 }}>AIR TEMP</span>
-                  <div style={{ fontSize: '16px', fontWeight: 800, marginTop: '4px', color: airTemp > 302 ? 'var(--warning)' : 'var(--text-primary)' }}>
-                    {airTemp ? `${airTemp.toFixed(1)} K` : '—'}
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
-                  <span style={{ fontSize: '9px', color: 'var(--text-secondary)', fontWeight: 600 }}>PROCESS TEMP</span>
-                  <div style={{ fontSize: '16px', fontWeight: 800, marginTop: '4px', color: procTemp > 310 ? 'var(--warning)' : 'var(--text-primary)' }}>
-                    {procTemp ? `${procTemp.toFixed(1)} K` : '—'}
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
-                  <span style={{ fontSize: '9px', color: 'var(--text-secondary)', fontWeight: 600 }}>ROTATIONAL SPEED</span>
-                  <div style={{ fontSize: '16px', fontWeight: 800, marginTop: '4px', color: speed > 2000 ? 'var(--warning)' : 'var(--text-primary)' }}>
-                    {speed ? `${speed} RPM` : '—'}
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
-                  <span style={{ fontSize: '9px', color: 'var(--text-secondary)', fontWeight: 600 }}>TORQUE</span>
-                  <div style={{ fontSize: '16px', fontWeight: 800, marginTop: '4px', color: torque > 60 ? 'var(--warning)' : 'var(--text-primary)' }}>
-                    {torque ? `${torque.toFixed(1)} Nm` : '—'}
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-glass)' }}>
-                  <span style={{ fontSize: '9px', color: 'var(--text-secondary)', fontWeight: 600 }}>TOOL WEAR</span>
-                  <div style={{ fontSize: '16px', fontWeight: 800, marginTop: '4px', color: toolWear > 180 ? 'var(--warning)' : 'var(--text-primary)' }}>
-                    {toolWear ? `${toolWear.toFixed(1)} min` : '—'}
-                  </div>
-                </div>
+                {[
+                  { label: 'AIR TEMP', val: airTemp, unit: 'K', key: 'air_temperature', rawVal: airTemp },
+                  { label: 'PROCESS TEMP', val: procTemp, unit: 'K', key: 'process_temperature', rawVal: procTemp },
+                  { label: 'SPEED', val: speed, unit: 'RPM', key: 'rotational_speed', rawVal: speed },
+                  { label: 'TORQUE', val: torque, unit: 'Nm', key: 'torque', rawVal: torque },
+                  { label: 'TOOL WEAR', val: toolWear, unit: 'min', key: 'tool_wear', rawVal: toolWear }
+                ].map((item) => {
+                  const anomalous = isVitalAnomalous(item.key, item.rawVal);
+                  const barPct = getVitalBarWidth(item.key, item.rawVal);
+                  return (
+                    <div 
+                      key={item.key} 
+                      style={{ 
+                        background: 'rgba(255,255,255,0.02)', 
+                        padding: '12px', 
+                        borderRadius: '8px', 
+                        border: '1px solid var(--border-glass)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px'
+                      }}
+                    >
+                      <span style={{ fontSize: '9px', color: 'var(--text-secondary)', fontWeight: 600 }}>{item.label}</span>
+                      <div style={{ fontSize: '16px', fontWeight: 800, color: anomalous ? 'var(--danger)' : 'var(--text-primary)' }}>
+                        {item.val ? `${item.val.toFixed(1)} ${item.unit}` : '—'}
+                      </div>
+                      {/* Vitals Progress Bar Indicator */}
+                      <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden', marginTop: '2px' }}>
+                        <div 
+                          style={{ 
+                            width: `${barPct}%`, 
+                            height: '100%', 
+                            background: anomalous ? 'var(--danger)' : 'var(--success)', 
+                            borderRadius: '2px' 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Historical Telemetry Charts */}
+            {/* Historical Telemetry & Failure Risk Trend Charts */}
             <div className="glass-card chart-card">
-              <div className="chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                <h3 style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Sensor Streams History</h3>
-                <div className="chart-tabs" style={{ display: 'flex', gap: '8px' }}>
+              <div className="chart-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                <h3 style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Vitals Trend Analysis</h3>
+                <div className="chart-tabs" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   <button className={`chart-tab ${activeTab === 'air_temperature' ? 'active' : ''}`} onClick={() => setActiveTab('air_temperature')}>Air Temp</button>
                   <button className={`chart-tab ${activeTab === 'process_temperature' ? 'active' : ''}`} onClick={() => setActiveTab('process_temperature')}>Proc Temp</button>
                   <button className={`chart-tab ${activeTab === 'rotational_speed' ? 'active' : ''}`} onClick={() => setActiveTab('rotational_speed')}>Speed</button>
                   <button className={`chart-tab ${activeTab === 'torque' ? 'active' : ''}`} onClick={() => setActiveTab('torque')}>Torque</button>
                   <button className={`chart-tab ${activeTab === 'tool_wear' ? 'active' : ''}`} onClick={() => setActiveTab('tool_wear')}>Tool Wear</button>
+                  <button className={`chart-tab ${activeTab === 'failure_probability' ? 'active' : ''}`} onClick={() => setActiveTab('failure_probability')}>Failure Risk</button>
                 </div>
               </div>
 
@@ -677,8 +709,8 @@ export default function App() {
                   <svg viewBox="0 0 500 200" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
                     <defs>
                       <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.25" />
-                        <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+                        <stop offset="0%" stopColor={activeTab === 'failure_probability' ? 'var(--danger)' : 'var(--primary)'} stopOpacity="0.25" />
+                        <stop offset="100%" stopColor={activeTab === 'failure_probability' ? 'var(--danger)' : 'var(--primary)'} stopOpacity="0" />
                       </linearGradient>
                     </defs>
 
@@ -686,26 +718,30 @@ export default function App() {
                     <path d={trendData.area} fill="url(#chartGrad)" />
 
                     {/* Trend Line */}
-                    <path d={trendData.path} fill="none" stroke="var(--primary)" strokeWidth="2.5" />
+                    <path d={trendData.path} fill="none" stroke={activeTab === 'failure_probability' ? 'var(--danger)' : 'var(--primary)'} strokeWidth="2.5" />
 
                     {/* Interactive dots */}
-                    {trendData.points.map((p, i) => (
-                      <circle
-                        key={i}
-                        cx={p.x}
-                        cy={p.y}
-                        r="3.5"
-                        fill={isPointAnomaly(activeTab, detail.sensor_history[i][activeTab]) ? 'var(--danger)' : 'var(--primary)'}
-                        stroke="#070a13"
-                        strokeWidth="1.5"
-                        style={{ cursor: 'pointer' }}
-                        title={`Val: ${detail.sensor_history[i][activeTab].toFixed(1)}`}
-                      />
-                    ))}
+                    {trendData.points.map((p, i) => {
+                      const pointVal = detail.sensor_history[i][activeTab];
+                      const anomalous = isPointAnomaly(activeTab, pointVal);
+                      return (
+                        <circle
+                          key={i}
+                          cx={p.x}
+                          cy={p.y}
+                          r="3.5"
+                          fill={anomalous ? 'var(--danger)' : 'var(--primary)'}
+                          stroke="#070a13"
+                          strokeWidth="1.5"
+                          style={{ cursor: 'pointer' }}
+                          title={`Val: ${pointVal.toFixed(1)}`}
+                        />
+                      );
+                    })}
 
-                    <text x="20" y="195" fill="var(--text-muted)" fontSize="9">Time →</text>
+                    <text x="20" y="195" fill="var(--text-muted)" fontSize="9">Time (Historical Evaluation Runs) →</text>
                     <text x="480" y="15" fill="var(--text-muted)" fontSize="9" textAnchor="end">
-                      Max: {trendData.maxVal ? trendData.maxVal.toFixed(1) : ''}
+                      Max Value: {trendData.maxVal ? trendData.maxVal.toFixed(1) : ''}
                     </text>
                   </svg>
                 ) : (
@@ -814,7 +850,7 @@ export default function App() {
 
             {/* Prescriptive Recommendation Card */}
             <div className="glass-card">
-              {activeLoading ? (
+              {recLoading ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}><div className="spinner"></div></div>
               ) : machineRec && machineRec.has_recommendation ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

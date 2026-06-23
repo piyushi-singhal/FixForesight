@@ -198,7 +198,8 @@ def get_all_machines():
                 "tool_wear": m.tool_wear,
                 "failure_probability": prob,
                 "predicted_failure": pred_fail,
-                "recommendation": rec_text
+                "recommendation": rec_text,
+                "created_at": m.created_at.isoformat() if hasattr(m, "created_at") and m.created_at else None
             })
         return result
     finally:
@@ -356,12 +357,23 @@ def get_machine_risk(machine_id: str):
         for i in range(20, 0, -1):
             base_time = datetime.now() - timedelta(minutes=i*2)
             factor = (20 - i) / 20.0
+            
+            h_air = db_m.air_temperature - (1.0 - factor) * 2.0 + random.uniform(-0.1, 0.1)
+            h_proc = db_m.process_temperature - (1.0 - factor) * 2.5 + random.uniform(-0.1, 0.1)
+            h_speed = int(db_m.rotational_speed - (1.0 - factor) * 100 + random.uniform(-10, 10))
+            h_torque = db_m.torque - (1.0 - factor) * 3.0 + random.uniform(-0.2, 0.2)
+            h_wear = max(0.0, db_m.tool_wear - (20 - i) * 0.5)
+            
+            # Dynamically calculate failure probability for this historical point
+            h_prob, _, _, _ = predict_machine_failure(h_air, h_proc, h_speed, h_torque, h_wear)
+            
             hist.append({
-                "air_temperature": db_m.air_temperature - (1.0 - factor) * 2.0 + random.uniform(-0.1, 0.1),
-                "process_temperature": db_m.process_temperature - (1.0 - factor) * 2.5 + random.uniform(-0.1, 0.1),
-                "rotational_speed": int(db_m.rotational_speed - (1.0 - factor) * 100 + random.uniform(-10, 10)),
-                "torque": db_m.torque - (1.0 - factor) * 3.0 + random.uniform(-0.2, 0.2),
-                "tool_wear": max(0.0, db_m.tool_wear - (20 - i) * 0.5),
+                "air_temperature": h_air,
+                "process_temperature": h_proc,
+                "rotational_speed": h_speed,
+                "torque": h_torque,
+                "tool_wear": h_wear,
+                "failure_probability": h_prob * 100.0,
                 "timestamp": base_time.isoformat()
             })
             

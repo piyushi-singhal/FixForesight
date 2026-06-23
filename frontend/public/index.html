@@ -960,6 +960,7 @@
                             </div>
 
                             <div style="display: flex; flex-direction: column; gap: 24px;">
+                                <div id="specs-vitals-container"></div>
                                 <div class="machine-detail-grid">
                                     <!-- Gauge -->
                                     <div class="glass-card risk-level-card">
@@ -990,6 +991,7 @@
                                                 <button id="tab-speed" class="chart-tab" onclick="setChartTab('rotational_speed')">Speed</button>
                                                 <button id="tab-torque" class="chart-tab" onclick="setChartTab('torque')">Torque</button>
                                                 <button id="tab-wear" class="chart-tab" onclick="setChartTab('tool_wear')">Tool Wear</button>
+                                                <button id="tab-risk" class="chart-tab" onclick="setChartTab('failure_probability')">Failure Risk</button>
                                             </div>
                                         </div>
                                         <div class="chart-body" id="chart-svg-container">
@@ -1001,6 +1003,28 @@
                                 <!-- Recommendation box -->
                                 <div class="glass-card rec-card" id="recommendations-container">
                                     <!-- Loaded dynamically -->
+                                </div>
+
+                                <!-- Work Order History box -->
+                                <div class="glass-card" style="margin-top: 10px;">
+                                    <h3 class="card-title" style="margin-bottom: 14px;">Maintenance Work Order History</h3>
+                                    <div style="overflow-x: auto;">
+                                        <table class="parts-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                                            <thead>
+                                                <tr>
+                                                    <th>Order ID</th>
+                                                    <th>Action Required</th>
+                                                    <th>Priority</th>
+                                                    <th>Status</th>
+                                                    <th>Created At</th>
+                                                    <th>Completed At</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="machine-work-orders-table-body">
+                                                <!-- Loaded dynamically -->
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1386,13 +1410,27 @@
         }
 
         // Fetch machine risk
+        async function loadWorkOrdersListOnly() {
+            try {
+                const r = await fetch(`${API_BASE}/work-orders`);
+                if (r.ok) {
+                    workOrders = await r.json();
+                }
+            } catch(e) {
+                console.error("Work orders fetch failure", e);
+            }
+        }
+
         async function loadDetails(id) {
             try {
+                await loadWorkOrdersListOnly();
                 const r = await fetch(`${API_BASE}/machines/${id}/risk`);
                 if (r.ok) {
                     detail = await r.json();
+                    renderSpecsAndVitals();
                     renderGauge();
                     renderChart();
+                    renderMachineWorkOrders();
                 }
             } catch(e) {
                 console.error("Detail fetch failure", e);
@@ -1448,6 +1486,7 @@
             else if (tab === 'rotational_speed') tabId = 'tab-speed';
             else if (tab === 'torque') tabId = 'tab-torque';
             else if (tab === 'tool_wear') tabId = 'tab-wear';
+            else if (tab === 'failure_probability') tabId = 'tab-risk';
             
             const activeBtn = document.getElementById(tabId);
             if (activeBtn) activeBtn.classList.add('active');
@@ -1962,6 +2001,123 @@
             });
         }
 
+        function renderSpecsAndVitals() {
+            const container = document.getElementById('specs-vitals-container');
+            if (!container) return;
+            
+            const machineObj = machines.find(m => m.machine_id === activeId);
+            const mModel = getMachineModel(activeId);
+            const mLocation = getMachineLocation(activeId);
+            const regDate = machineObj && machineObj.created_at ? new Date(machineObj.created_at).toLocaleDateString() : 'N/A';
+            
+            const airTemp = machineObj ? machineObj.air_temperature : 300.0;
+            const procTemp = machineObj ? machineObj.process_temperature : 310.0;
+            const speed = machineObj ? machineObj.rotational_speed : 1500;
+            const torque = machineObj ? machineObj.torque : 40.0;
+            const toolWear = machineObj ? machineObj.tool_wear : 10.0;
+            
+            const getBarPct = (key, val) => {
+                if (key === 'air_temperature') return Math.min(100, Math.max(10, (val / 310.0) * 100));
+                if (key === 'process_temperature') return Math.min(100, Math.max(10, (val / 320.0) * 100));
+                if (key === 'rotational_speed') return Math.min(100, Math.max(10, (val / 2600.0) * 100));
+                if (key === 'torque') return Math.min(100, Math.max(10, (val / 80.0) * 100));
+                if (key === 'tool_wear') return Math.min(100, Math.max(10, (val / 240.0) * 100));
+                return 10;
+            };
+
+            const vitals = [
+                { label: 'AIR TEMP', val: airTemp, unit: 'K', key: 'air_temperature' },
+                { label: 'PROCESS TEMP', val: procTemp, unit: 'K', key: 'process_temperature' },
+                { label: 'SPEED', val: speed, unit: 'RPM', key: 'rotational_speed' },
+                { label: 'TORQUE', val: torque, unit: 'Nm', key: 'torque' },
+                { label: 'TOOL WEAR', val: toolWear, unit: 'min', key: 'tool_wear' }
+            ];
+
+            container.innerHTML = `
+                <div class="glass-card" style="padding: 20px; margin-bottom: 0px;">
+                    <h3 class="card-title" style="margin-bottom: 16px;">Asset Specifications & Live Vitals</h3>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-glass)">
+                        <div>
+                            <span style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Hardware ID</span>
+                            <div style="font-size: 15px; font-weight: 700; margin-top: 4px;">${activeId}</div>
+                        </div>
+                        <div>
+                            <span style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Model Number</span>
+                            <div style="font-size: 15px; font-weight: 700; margin-top: 4px;">${mModel}</div>
+                        </div>
+                        <div>
+                            <span style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Plant Location</span>
+                            <div style="font-size: 15px; font-weight: 700; margin-top: 4px;">${mLocation}</div>
+                        </div>
+                        <div>
+                            <span style="font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Registration Date</span>
+                            <div style="font-size: 15px; font-weight: 700; margin-top: 4px;">${regDate}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
+                        ${vitals.map(v => {
+                            const isAnom = isPointAnomaly(v.key, v.val);
+                            const barPct = getBarPct(v.key, v.val);
+                            return `
+                                <div style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid var(--border-glass); display: flex; flex-direction: column; gap: 6px;">
+                                    <span style="font-size: 9px; color: var(--text-secondary); font-weight: 600;">${v.label}</span>
+                                    <div style="font-size: 16px; font-weight: 800; color: ${isAnom ? 'var(--danger)' : 'var(--text-primary)'}">
+                                        ${v.val ? `${v.val.toFixed(1)} ${v.unit}` : '—'}
+                                    </div>
+                                    <div style="height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; margin-top: 2px;">
+                                        <div style="width: ${barPct}%; height: 100%; background: ${isAnom ? 'var(--danger)' : 'var(--success)'}; border-radius: 2px;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMachineWorkOrders() {
+            const tbody = document.getElementById('machine-work-orders-table-body');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            const machineWorkOrders = workOrders.filter(wo => wo.machine_id === activeId);
+            
+            if (machineWorkOrders.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                            No work orders generated or authorized for this asset.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            machineWorkOrders.forEach(wo => {
+                const statusClass = wo.status === 'completed' ? 'healthy' : wo.status === 'in_progress' ? 'warning' : 'danger';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>WO-${String(wo.id).padStart(3, '0')}</strong></td>
+                    <td style="font-size: 12px;">${wo.action_required}</td>
+                    <td>
+                        <span class="machine-prob-badge ${wo.priority.toLowerCase() === 'critical' ? 'danger' : wo.priority.toLowerCase() === 'high' ? 'warning' : 'healthy'}">
+                            ${wo.priority}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="machine-prob-badge ${statusClass}">
+                            ${wo.status.replace('_', ' ')}
+                        </span>
+                    </td>
+                    <td>${new Date(wo.created_at).toLocaleString()}</td>
+                    <td>${wo.completed_at ? new Date(wo.completed_at).toLocaleString() : '—'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         function renderGauge() {
             const prob = detail && detail.prediction ? detail.prediction.failure_probability : 5;
             const label = detail && detail.prediction ? detail.prediction.predicted_failure : 'Normal Operation';
@@ -2031,6 +2187,9 @@
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
             svg.setAttribute('style', 'width:100%; height:100%;');
             
+            const isRisk = activeTab === 'failure_probability';
+            const themeColor = isRisk ? 'var(--danger)' : 'var(--primary)';
+
             const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
             const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
             grad.setAttribute('id', 'chart-gradient-local');
@@ -2039,11 +2198,11 @@
             
             const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
             stop1.setAttribute('offset', '0%');
-            stop1.setAttribute('stop-color', 'var(--primary)');
+            stop1.setAttribute('stop-color', themeColor);
             stop1.setAttribute('stop-opacity', '0.25');
             const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
             stop2.setAttribute('offset', '100%');
-            stop2.setAttribute('stop-color', 'var(--primary)');
+            stop2.setAttribute('stop-color', themeColor);
             stop2.setAttribute('stop-opacity', '0');
             
             grad.appendChild(stop1); grad.appendChild(stop2);
@@ -2065,7 +2224,7 @@
             const strokePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             strokePath.setAttribute('d', path);
             strokePath.setAttribute('fill', 'none');
-            strokePath.setAttribute('stroke', 'var(--primary)');
+            strokePath.setAttribute('stroke', themeColor);
             strokePath.setAttribute('stroke-width', '2.5');
             strokePath.setAttribute('stroke-linecap', 'round');
             strokePath.setAttribute('stroke-linejoin', 'round');
@@ -2078,7 +2237,7 @@
                 circle.setAttribute('cx', String(p.x));
                 circle.setAttribute('cy', String(p.y));
                 circle.setAttribute('r', isAnomaly ? '5' : '3.5');
-                circle.setAttribute('fill', isAnomaly ? 'var(--danger)' : 'var(--primary)');
+                circle.setAttribute('fill', isAnomaly ? 'var(--danger)' : (isRisk ? 'var(--danger)' : 'var(--primary)'));
                 circle.setAttribute('stroke', '#070a13');
                 circle.setAttribute('stroke-width', '1.5');
                 circle.setAttribute('style', 'cursor:pointer');
@@ -2106,11 +2265,12 @@
         }
 
         function isPointAnomaly(tab, val) {
-            if (tab === 'air_temperature' && val > 90.0) return true;
-            if (tab === 'process_temperature' && val > 95.0) return true;
-            if (tab === 'rotational_speed' && val > 3200) return true;
-            if (tab === 'torque' && val > 4.5) return true;
-            if (tab === 'tool_wear' && val > 10.0) return true;
+            if (tab === 'air_temperature' && val > 303.0) return true;
+            if (tab === 'process_temperature' && val > 313.0) return true;
+            if (tab === 'rotational_speed' && (val > 2200 || val < 1100)) return true;
+            if (tab === 'torque' && val > 65.0) return true;
+            if (tab === 'tool_wear' && val > 180.0) return true;
+            if (tab === 'failure_probability' && val > 50.0) return true;
             return false;
         }
 
