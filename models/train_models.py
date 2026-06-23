@@ -58,13 +58,30 @@ def prepare_xy(df: pd.DataFrame, target_col: str = "Machine failure"):
         else:
             raise KeyError(f"Target column '{target_col}' not found in dataframe")
 
-    X = df.select_dtypes(include=[np.number]).copy()
-    if target_col not in X.columns:
-        # target may be non-numeric but we expect numeric
-        X[target_col] = df[target_col]
+    drop_cols = [
+        "Machine failure",
+        "TWF",
+        "HDF",
+        "PWF",
+        "OSF",
+        "RNF"
+    ]
 
-    y = X.pop(target_col)
-    
+    X = df.drop(columns=drop_cols, errors="ignore")
+    X = X.select_dtypes(include=[np.number])
+
+    y = df["Machine failure"]
+
+    X.columns = [
+        col.replace('[', '_')
+           .replace(']', '_')
+           .replace('<', '_')
+           .replace('>', '_')
+        for col in X.columns
+    ]
+
+    return X, y
+
     # Sanitize feature names for XGBoost compatibility (remove brackets, angle brackets, etc.)
     X.columns = [col.replace('[', '_').replace(']', '_').replace('<', '_').replace('>', '_') for col in X.columns]
     
