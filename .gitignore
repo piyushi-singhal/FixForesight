@@ -1,4 +1,5 @@
 venv/
+venv_313/
 __pycache__/
 *.pyc
 .vscode/
@@ -11,3 +12,4 @@ dist/
 *.egg-info/
 /.pytest_cache/
 node_modules/
+*.db

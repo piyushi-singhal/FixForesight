@@ -34,6 +34,7 @@ CREATE TABLE predictions (
 CREATE TABLE recommendations (
     recommendation_id SERIAL PRIMARY KEY,
     machine_id VARCHAR(50) REFERENCES machines(machine_id) ON DELETE CASCADE,
+    prediction_id INT REFERENCES predictions(prediction_id) ON DELETE CASCADE,
     recommendation TEXT NOT NULL, -- 'Replace Bearing', etc.
     priority VARCHAR(50) NOT NULL, -- 'High', etc.
     confidence DOUBLE PRECISION NOT NULL, -- 0.0 to 100.0
@@ -62,6 +63,7 @@ CREATE TABLE parts_inventory (
 CREATE TABLE work_orders (
     id SERIAL PRIMARY KEY,
     machine_id VARCHAR(50) REFERENCES machines(machine_id) ON DELETE CASCADE,
+    recommendation_id INT REFERENCES recommendations(recommendation_id) ON DELETE SET NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'open', -- 'open', 'in_progress', 'completed'
     priority VARCHAR(50) NOT NULL,
     action_required TEXT NOT NULL,
