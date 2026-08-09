@@ -8,5 +8,5 @@ os.environ["PYTHONPATH"] = workspace_dir
 import uvicorn
 
 if __name__ == "__main__":
-    print("Starting uvicorn on port 8001...")
-    uvicorn.run("backend.main:app", host="127.0.0.1", port=8001)
+    print("Starting uvicorn on port 8000...")
+    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000)
