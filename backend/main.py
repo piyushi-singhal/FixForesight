@@ -98,14 +98,21 @@ def startup_pipeline():
     except Exception as sqs_thread_err:
         print(f"Startup: SQS Consumer background thread initialization failed: {sqs_thread_err}")
         
-    # Ensure database tables exist first
+    # Ensure database migrations are applied first
     try:
-        from backend.database.connection import engine, Base
-        from backend.database import models
-        Base.metadata.create_all(bind=engine)
-        print("Startup: Database tables created/verified.")
+        from alembic.config import Config
+        from alembic import command
+        
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_dir)
+        ini_path = os.path.join(project_root, "alembic.ini")
+        
+        print(f"Startup: Applying database migrations using Alembic config: {ini_path}")
+        alembic_cfg = Config(ini_path)
+        command.upgrade(alembic_cfg, "head")
+        print("Startup: Database migrations applied successfully.")
     except Exception as e:
-        print(f"Startup: Database verification failed: {e}")
+        print(f"Startup: Database migrations failed: {e}")
         
     lock_file = os.path.join(os.path.dirname(__file__), "..", "tmp", "pipeline.lock")
     run_pipeline = not os.path.exists(lock_file)

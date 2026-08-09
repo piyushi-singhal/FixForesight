@@ -124,6 +124,48 @@ Queries historical incident logs indexed in Apache Solr.
 
 ---
 
+### 7. POST /work-orders
+Creates a new work order task.
+* **Request Body**:
+```json
+{
+  "machine_id": "M101",
+  "priority": "High",
+  "action_required": "Replace worn parts",
+  "recommendation_id": 12
+}
+```
+* **Response Status**: `200 OK`
+* **Response Body**:
+```json
+{
+  "status": "created",
+  "work_order_id": 4
+}
+```
+
+---
+
+### 8. PATCH /work-orders/{id}/status
+Updates the status of a work order task.
+* **Request Body**:
+```json
+{
+  "status": "in_progress"
+}
+```
+* **Response Status**: `200 OK`
+* **Response Body**:
+```json
+{
+  "status": "success",
+  "work_order_id": 4,
+  "new_status": "in_progress"
+}
+```
+
+---
+
 # Database Schema Reference
 
 ### machines
@@ -159,3 +201,20 @@ Queries historical incident logs indexed in Apache Solr.
 * `severity` (VARCHAR)
 * `message` (TEXT)
 * `created_at` (TIMESTAMP)
+
+### parts_inventory
+* `part_id` (SERIAL PRIMARY KEY)
+* `part_name` (VARCHAR UNIQUE)
+* `quantity` (INT)
+* `min_required` (INT)
+* `unit_cost` (DOUBLE PRECISION)
+
+### work_orders
+* `id` (SERIAL PRIMARY KEY)
+* `machine_id` (VARCHAR REFERENCES machines(machine_id))
+* `recommendation_id` (INT REFERENCES recommendations(recommendation_id) ON DELETE SET NULL)
+* `status` (VARCHAR)
+* `priority` (VARCHAR)
+* `action_required` (TEXT)
+* `created_at` (TIMESTAMP)
+* `completed_at` (TIMESTAMP)
