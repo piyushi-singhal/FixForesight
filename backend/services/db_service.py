@@ -2,6 +2,7 @@ import random
 from datetime import datetime, timedelta
 import sys
 import os
+import boto3
 from backend.database.connection import SessionLocal
 from sqlalchemy.exc import SQLAlchemyError
 from backend.database import queries
@@ -723,7 +724,8 @@ def search_incidents(q: str):
             response_data = data.get("response", {})
             return {
                 "numFound": response_data.get("numFound", 0),
-                "docs": response_data.get("docs", [])
+                "docs": response_data.get("docs", []),
+                "solr_status": "Solr: Connected"
             }
     except Exception as e:
         print(f"Warning: Solr request failed ({e}). Falling back to local static search.")
@@ -802,7 +804,8 @@ def search_incidents(q: str):
                 
     return {
         "numFound": len(results),
-        "docs": results
+        "docs": results,
+        "solr_status": "Solr: Unavailable"
     }
 
 def run_predictions_pipeline(limit: int = 100):
@@ -936,5 +939,179 @@ def run_predictions_pipeline(limit: int = 100):
     except Exception as e:
         db_sess.rollback()
         raise e
+    finally:
+        db_sess.close()
+
+def update_work_order_status(wo_id: int, status: str):
+    db_sess = SessionLocal()
+    try:
+        db_wo = db_sess.query(WorkOrder).filter(WorkOrder.id == wo_id).first()
+        if not db_wo:
+            raise ValueError(f"Work order with ID {wo_id} not found")
+        
+        db_wo.status = status
+        if status == "completed":
+            db_wo.completed_at = datetime.utcnow()
+        else:
+            db_wo.completed_at = None
+            
+        db_sess.commit()
+        db_sess.refresh(db_wo)
+        
+        # Real-time Solr indexing/updates
+        try:
+            wo_doc = {
+                "id": f"wo-{db_wo.id}",
+                "machine_id": db_wo.machine_id,
+                "failure_signature": f"[WORK ORDER] Action required: {db_wo.action_required}",
+                "action_taken": f"Priority: {db_wo.priority} (Status: {db_wo.status})",
+                "outcome": f"Scheduled - {db_wo.status.capitalize()}",
+                "date": db_wo.created_at.isoformat() + "Z" if db_wo.created_at else datetime.utcnow().isoformat() + "Z"
+            }
+            index_documents_in_solr([wo_doc])
+            sync_data_to_solr()
+        except Exception as solr_err:
+            print(f"Warning: Failed to sync status update to Solr: {solr_err}")
+            
+        return db_wo
+    finally:
+        db_sess.close()
+
+def get_sqs_client():
+    aws_endpoint = os.environ.get("AWS_ENDPOINT_URL", "http://localhost:4566")
+    aws_region = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
+    aws_key = os.environ.get("AWS_ACCESS_KEY_ID", "mock")
+    aws_secret = os.environ.get("AWS_SECRET_ACCESS_KEY", "mock")
+    return boto3.client(
+        "sqs",
+        endpoint_url=aws_endpoint,
+        region_name=aws_region,
+        aws_access_key_id=aws_key,
+        aws_secret_access_key=aws_secret
+    )
+
+def get_sns_client():
+    aws_endpoint = os.environ.get("AWS_ENDPOINT_URL", "http://localhost:4566")
+    aws_region = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
+    aws_key = os.environ.get("AWS_ACCESS_KEY_ID", "mock")
+    aws_secret = os.environ.get("AWS_SECRET_ACCESS_KEY", "mock")
+    return boto3.client(
+        "sns",
+        endpoint_url=aws_endpoint,
+        region_name=aws_region,
+        aws_access_key_id=aws_key,
+        aws_secret_access_key=aws_secret
+    )
+
+def process_single_telemetry(machine_id: str, air_temp: float, proc_temp: float, speed: int, torque: float, wear: float):
+    # Predict failure using the ML model
+    prob, pred_fail, failure_type, time_to_fail = predict_machine_failure(
+        air_temp, proc_temp, speed, torque, wear
+    )
+    
+    # Map machine status
+    status = "Healthy"
+    if prob > 0.8:
+        status = "Critical"
+    elif prob > 0.4:
+        status = "Warning"
+        
+    db_sess = SessionLocal()
+    try:
+        # Create / Update Machine vitals
+        existing_m = db_sess.query(Machine).filter(Machine.machine_id == machine_id).first()
+        if existing_m:
+            existing_m.status = status
+            existing_m.air_temperature = air_temp
+            existing_m.process_temperature = proc_temp
+            existing_m.rotational_speed = speed
+            existing_m.torque = torque
+            existing_m.tool_wear = wear
+        else:
+            m = Machine(
+                machine_id=machine_id,
+                machine_name=f"Machine {machine_id}",
+                status=status,
+                air_temperature=air_temp,
+                process_temperature=proc_temp,
+                rotational_speed=speed,
+                torque=torque,
+                tool_wear=wear
+            )
+            db_sess.add(m)
+        db_sess.flush()
+        
+        # Create / Update Prediction
+        existing_pred = db_sess.query(Prediction).filter(Prediction.machine_id == machine_id).first()
+        if existing_pred:
+            existing_pred.failure_probability = prob * 100.0
+            existing_pred.predicted_failure = pred_fail
+            existing_pred.time_to_failure = time_to_fail
+            pred = existing_pred
+        else:
+            pred = Prediction(
+                machine_id=machine_id,
+                failure_probability=prob * 100.0,
+                predicted_failure=pred_fail,
+                time_to_failure=time_to_fail
+            )
+            db_sess.add(pred)
+        db_sess.flush()
+        
+        # Create / Update Recommendation
+        recommendation_text = "No active recommendations. Machine operation normal."
+        priority = "Low"
+        confidence = prob * 100.0
+        
+        if prob > 0.8:
+            recommendation_text = "Immediate Maintenance Required"
+            priority = "Critical"
+        elif prob > 0.5:
+            recommendation_text = "Schedule preventive maintenance"
+            priority = "Medium"
+            
+        existing_rec = db_sess.query(Recommendation).filter(Recommendation.machine_id == machine_id).first()
+        if existing_rec:
+            existing_rec.recommendation = recommendation_text
+            existing_rec.priority = priority
+            existing_rec.confidence = confidence
+            existing_rec.prediction_id = pred.prediction_id
+        else:
+            rec = Recommendation(
+                machine_id=machine_id,
+                prediction_id=pred.prediction_id,
+                recommendation=recommendation_text,
+                priority=priority,
+                confidence=confidence
+            )
+            db_sess.add(rec)
+            
+        db_sess.commit()
+        
+        # If failure probability is high (> 80%), publish an SNS alert!
+        if prob > 0.8:
+            try:
+                sns = get_sns_client()
+                topic_arn = "arn:aws:sns:us-east-1:000000000000:maintenance-alerts"
+                subject = f"CRITICAL: Machine {machine_id} requires immediate attention"
+                message = f"Machine {machine_id} has high failure probability of {prob * 100.0:.2f}% (Predicted: {pred_fail}). Estimated Time To Failure: {time_to_fail}."
+                sns.publish(
+                    TopicArn=topic_arn,
+                    Subject=subject,
+                    Message=message
+                )
+                print(f"SQS Consumer: Published SNS alert for critical machine {machine_id}")
+            except Exception as sns_err:
+                print(f"Warning: Failed to publish SNS alert: {sns_err}")
+                
+        # Sync Solr
+        try:
+            sync_data_to_solr()
+        except Exception as solr_err:
+            print(f"Warning: Failed to sync SQS telemetry update to Solr: {solr_err}")
+            
+    except Exception as db_err:
+        db_sess.rollback()
+        print(f"Error in process_single_telemetry: {db_err}")
     finally:
         db_sess.close()

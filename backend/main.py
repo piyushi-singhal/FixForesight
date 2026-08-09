@@ -19,11 +19,85 @@ from backend.routes import (
 
 app = FastAPI(title="FixForesight Predictive + Prescriptive Backend (Modular)")
 
+def start_sqs_consumer():
+    import threading
+    import time
+    import json
+    import logging
+    from backend.services.db_service import get_sqs_client, process_single_telemetry
+    
+    logger = logging.getLogger("sqs_consumer_thread")
+    logger.setLevel(logging.INFO)
+    
+    def poll_sqs():
+        logger.info("SQS Consumer Thread: starting...")
+        sqs = None
+        queue_url = None
+        for attempt in range(12):
+            try:
+                sqs = get_sqs_client()
+                queue_url = sqs.get_queue_url(QueueName="sensor-events")["QueueUrl"]
+                logger.info(f"SQS Consumer Thread: connected to queue at {queue_url}")
+                break
+            except Exception as e:
+                logger.warning(f"SQS Consumer Thread: queue check failed (attempt {attempt+1}/12): {e}")
+                time.sleep(5.0)
+                
+        if not sqs or not queue_url:
+            logger.error("SQS Consumer Thread: failed to resolve queue sensor-events. Exiting thread.")
+            return
+            
+        while True:
+            try:
+                response = sqs.receive_message(
+                    QueueUrl=queue_url,
+                    MaxNumberOfMessages=5,
+                    WaitTimeSeconds=5
+                )
+                messages = response.get("Messages", [])
+                for msg in messages:
+                    body_str = msg.get("Body", "")
+                    try:
+                        data = json.loads(body_str)
+                        machine_id = data.get("machine_id", "M101")
+                        air_temp = float(data.get("air_temperature"))
+                        proc_temp = float(data.get("process_temperature"))
+                        speed = int(data.get("rotational_speed"))
+                        torque = float(data.get("torque"))
+                        wear = float(data.get("tool_wear"))
+                        
+                        logger.info(f"SQS Consumer: processing telemetry event for {machine_id}")
+                        process_single_telemetry(machine_id, air_temp, proc_temp, speed, torque, wear)
+                    except Exception as parse_err:
+                        logger.warning(f"SQS Consumer: failed to process telemetry body: {parse_err}")
+                        
+                    # Delete message from SQS
+                    try:
+                        sqs.delete_message(
+                            QueueUrl=queue_url,
+                            ReceiptHandle=msg["ReceiptHandle"]
+                        )
+                    except Exception as del_err:
+                        logger.warning(f"SQS Consumer: failed to delete message: {del_err}")
+            except Exception as loop_err:
+                logger.warning(f"SQS Consumer Thread loop error: {loop_err}")
+                time.sleep(2.0)
+
+    t = threading.Thread(target=poll_sqs, daemon=True)
+    t.start()
+
 @app.on_event("startup")
 def startup_pipeline():
     import os
     from datetime import datetime
     
+    # Start the SQS consumer thread
+    try:
+        start_sqs_consumer()
+        print("Startup: SQS Consumer background thread started.")
+    except Exception as sqs_thread_err:
+        print(f"Startup: SQS Consumer background thread initialization failed: {sqs_thread_err}")
+        
     # Ensure database tables exist first
     try:
         from backend.database.connection import engine, Base
@@ -137,11 +211,37 @@ def get_index_html():
 # Health check
 @app.get("/health")
 def get_health():
+    import requests
+    import os
+    
+    # Check Solr
+    solr_status = "healthy"
+    solr_url = os.environ.get("SOLR_URL", "http://localhost:8983/solr/incidents")
+    try:
+        r = requests.get(f"{solr_url}/admin/cores?action=STATUS", timeout=1.0)
+        if r.status_code != 200:
+            solr_status = "unhealthy"
+    except Exception:
+        solr_status = "unhealthy"
+
+    # Check LocalStack
+    localstack_status = "healthy"
+    try:
+        from backend.services.db_service import get_sqs_client
+        sqs = get_sqs_client()
+        sqs.list_queues(MaxResults=1)
+    except Exception:
+        localstack_status = "unhealthy"
+
+    overall_status = "healthy"
+    if solr_status == "unhealthy" or localstack_status == "unhealthy":
+        overall_status = "degraded"
+
     return {
-        "status": "healthy",
-        "postgres": "healthy (In-Memory FastAPI Modular)",
-        "localstack": "healthy",
-        "solr": "healthy"
+        "status": overall_status,
+        "postgres": "healthy",
+        "localstack": localstack_status,
+        "solr": solr_status
     }
 
 # Register Contract routers

@@ -775,6 +775,19 @@
                     </svg>
                     API: <span id="status-api-text" style="color:var(--success)">healthy</span>
                 </div>
+                <div class="status-badge" id="badge-solr">
+                    <svg id="status-solr-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    Solr: <span id="status-solr-text">checking</span>
+                </div>
+                <div class="status-badge" id="badge-localstack">
+                    <svg id="status-localstack-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z" />
+                    </svg>
+                    AWS: <span id="status-localstack-text">checking</span>
+                </div>
                 <div class="status-badge">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
                         <ellipse cx="12" cy="5" rx="9" ry="3" />
@@ -952,11 +965,16 @@
 
                         <!-- Selected Machine Detail Panel (visible when a machine is active) -->
                         <div id="machine-detail-panel" style="display: none;">
-                            <div style="margin-bottom: 14px;">
-                                <h3 id="machine-detail-title" style="font-size: 18px; font-weight: 700;">Telemetry Vitals & Mitigation:</h3>
-                                <p style="color: var(--text-secondary); font-size: 12px;">
-                                    Operational sensors trend logs, predicted failure models, and parts logistics for Unit.
-                                </p>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                                <div>
+                                    <h3 id="machine-detail-title" style="font-size: 18px; font-weight: 700;">Telemetry Vitals & Mitigation:</h3>
+                                    <p style="color: var(--text-secondary); font-size: 12px;">
+                                        Operational sensors trend logs, predicted failure models, and parts logistics for Unit.
+                                    </p>
+                                </div>
+                                <button class="btn-action" id="btn-simulate-telemetry" style="background: rgba(245, 158, 11, 0.1); border-color: #f59e0b; color: #f59e0b;" onclick="triggerTelemetrySimulation()">
+                                    Simulate SQS Telemetry Stream
+                                </button>
                             </div>
 
                             <div style="display: flex; flex-direction: column; gap: 24px;">
@@ -1105,6 +1123,7 @@
                                         <th>Status</th>
                                         <th>Created At</th>
                                         <th>Completed At</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="work-orders-table-body">
@@ -1340,15 +1359,61 @@
                 const r = await fetch(`${API_BASE}/health`);
                 if (!r.ok) throw new Error();
                 const d = await r.json();
+                
+                // Update API status
                 document.getElementById('status-api-text').textContent = 'healthy';
                 document.getElementById('status-api-text').style.color = 'var(--success)';
-                document.getElementById('status-fastapi-badge').textContent = 'ONLINE';
-                document.getElementById('status-fastapi-badge').className = 'machine-prob-badge healthy';
+                document.getElementById('badge-api').querySelector('svg').setAttribute('stroke', '#10b981');
+                
+                // Update Solr status
+                const solrText = document.getElementById('status-solr-text');
+                const solrSvg = document.getElementById('status-solr-svg');
+                if (solrText && solrSvg) {
+                    if (d.solr === 'healthy') {
+                        solrText.textContent = 'online';
+                        solrText.style.color = 'var(--success)';
+                        solrSvg.setAttribute('stroke', '#10b981');
+                    } else {
+                        solrText.textContent = 'offline';
+                        solrText.style.color = 'var(--danger)';
+                        solrSvg.setAttribute('stroke', '#ef4444');
+                    }
+                }
+                
+                // Update AWS status
+                const awsText = document.getElementById('status-localstack-text');
+                const awsSvg = document.getElementById('status-localstack-svg');
+                if (awsText && awsSvg) {
+                    if (d.localstack === 'healthy') {
+                        awsText.textContent = 'online';
+                        awsText.style.color = 'var(--success)';
+                        awsSvg.setAttribute('stroke', '#10b981');
+                    } else {
+                        awsText.textContent = 'offline';
+                        awsText.style.color = 'var(--danger)';
+                        awsSvg.setAttribute('stroke', '#ef4444');
+                    }
+                }
             } catch(e) {
                 document.getElementById('status-api-text').textContent = 'offline';
                 document.getElementById('status-api-text').style.color = 'var(--danger)';
-                document.getElementById('status-fastapi-badge').textContent = 'OFFLINE';
-                document.getElementById('status-fastapi-badge').className = 'machine-prob-badge danger';
+                document.getElementById('badge-api').querySelector('svg').setAttribute('stroke', '#ef4444');
+                
+                const solrText = document.getElementById('status-solr-text');
+                const solrSvg = document.getElementById('status-solr-svg');
+                if (solrText && solrSvg) {
+                    solrText.textContent = 'offline';
+                    solrText.style.color = 'var(--danger)';
+                    solrSvg.setAttribute('stroke', '#ef4444');
+                }
+                
+                const awsText = document.getElementById('status-localstack-text');
+                const awsSvg = document.getElementById('status-localstack-svg');
+                if (awsText && awsSvg) {
+                    awsText.textContent = 'offline';
+                    awsText.style.color = 'var(--danger)';
+                    awsSvg.setAttribute('stroke', '#ef4444');
+                }
             }
         }
 
@@ -1533,8 +1598,27 @@
             try {
                 const r = await fetch(`${API_BASE}/search?q=${encodeURIComponent(val)}`);
                 if (r.ok) {
-                    const data = await r.json();
-                    document.getElementById('search-results-heading').textContent = `Search Results (${data.numFound} logs found)`;
+                    const heading = document.getElementById('search-results-heading');
+                    heading.innerHTML = `Search Results (${data.numFound} logs found)`;
+                    
+                    const badge = document.createElement('span');
+                    badge.style.fontSize = '10px';
+                    badge.style.padding = '2px 6px';
+                    badge.style.borderRadius = '4px';
+                    badge.style.marginLeft = '12px';
+                    badge.style.fontWeight = '500';
+                    badge.style.display = 'inline-block';
+                    badge.style.verticalAlign = 'middle';
+                    if (data.solr_status === "Solr: Connected") {
+                        badge.style.background = 'rgba(74, 222, 128, 0.1)';
+                        badge.style.color = '#4ade80';
+                        badge.textContent = 'Solr Connected';
+                    } else {
+                        badge.style.background = 'rgba(239, 68, 68, 0.1)';
+                        badge.style.color = '#ef4444';
+                        badge.textContent = 'Solr Offline (Local Database Fallback)';
+                    }
+                    heading.appendChild(badge);
                     
                     container.innerHTML = '';
                     if (data.docs.length === 0) {
@@ -1726,6 +1810,16 @@
                     workOrders.forEach(wo => {
                         const statusClass = wo.status === 'completed' ? 'healthy' : wo.status === 'in_progress' ? 'warning' : 'danger';
                         const tech = techs[wo.id % techs.length];
+                        
+                        let actionButtonHtml = '';
+                        if (wo.status === 'open') {
+                            actionButtonHtml = `<button class="btn-action" style="padding: 2px 6px; font-size:10px;" onclick="updateWorkOrderStatus(${wo.id}, 'in_progress')">Start Work</button>`;
+                        } else if (wo.status === 'in_progress') {
+                            actionButtonHtml = `<button class="btn-action" style="padding: 2px 6px; font-size:10px; background:#10b981;" onclick="updateWorkOrderStatus(${wo.id}, 'completed')">Complete Work</button>`;
+                        } else {
+                            actionButtonHtml = `<span style="color:var(--text-muted); font-size:10px;">✓ Complete</span>`;
+                        }
+
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
                             <td><strong>WO-${String(wo.id).padStart(3, '0')}</strong></td>
@@ -1738,12 +1832,60 @@
                             </td>
                             <td>${new Date(wo.created_at).toLocaleString()}</td>
                             <td>${wo.completed_at ? new Date(wo.completed_at).toLocaleString() : '—'}</td>
+                            <td>${actionButtonHtml}</td>
                         `;
                         tbody.appendChild(tr);
                     });
                 }
             } catch(e) {
-                tbody.innerHTML = '<tr><td colspan="6" style="color:var(--danger); text-align:center; padding:20px;">Failed to load work orders.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="color:var(--danger); text-align:center; padding:20px;">Failed to load work orders.</td></tr>';
+            }
+        }
+
+        async function updateWorkOrderStatus(woId, newStatus) {
+            try {
+                const r = await fetch(`${API_BASE}/work-orders/${woId}/status`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ status: newStatus })
+                });
+                if (r.ok) {
+                    await loadWorkOrders();
+                    await fetchAnalytics();
+                }
+            } catch(e) {
+                console.error("WO status update failure", e);
+            }
+        }
+
+        async function triggerTelemetrySimulation() {
+            if (!activeId) return;
+            const btn = document.getElementById('btn-simulate-telemetry');
+            btn.disabled = true;
+            btn.textContent = 'Simulating...';
+            try {
+                const r = await fetch(`${API_BASE}/machines/${activeId}/simulate?count=10&interval=1.0`, {
+                    method: 'POST'
+                });
+                if (r.ok) {
+                    alert(`Real-time IoT simulation triggered via SQS for machine ${activeId}! Operational sensor events will stream in over the next 10 seconds.`);
+                    setTimeout(async () => {
+                        await loadMachines();
+                        await loadDetails(activeId);
+                        await fetchAnalytics();
+                        await loadAlerts();
+                        btn.disabled = false;
+                        btn.textContent = 'Simulate SQS Telemetry Stream';
+                    }, 11000);
+                } else {
+                    alert('Simulation trigger failed.');
+                    btn.disabled = false;
+                    btn.textContent = 'Simulate SQS Telemetry Stream';
+                }
+            } catch(e) {
+                console.error("Simulation error", e);
+                btn.disabled = false;
+                btn.textContent = 'Simulate SQS Telemetry Stream';
             }
         }
 

@@ -74,6 +74,9 @@ class WorkOrderRequest(BaseModel):
     action_required: Optional[str] = None
     recommendation_id: Optional[int] = None
 
+class WorkOrderStatusUpdate(BaseModel):
+    status: str
+
 
 class AlertWebhookRequest(BaseModel):
     Type: Optional[str] = None

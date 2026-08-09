@@ -295,6 +295,55 @@ class SensorSimulator:
 
         return df
 
+    def simulate_to_sqs(self, machine_id: str = "M101", interval_seconds: float = 1.0, num_events: int = 10):
+        """Simulate telemetry messages and publish them directly to LocalStack SQS."""
+        import time
+        import os
+        import boto3
+        import json
+        
+        aws_endpoint = os.environ.get("AWS_ENDPOINT_URL", "http://localhost:4566")
+        sqs = boto3.client(
+            "sqs",
+            endpoint_url=aws_endpoint,
+            region_name="us-east-1",
+            aws_access_key_id="mock",
+            aws_secret_access_key="mock"
+        )
+        
+        try:
+            queue_url = sqs.get_queue_url(QueueName="sensor-events")["QueueUrl"]
+        except Exception:
+            queue_url = f"{aws_endpoint}/000000000000/sensor-events"
+            
+        print(f"SensorSimulator: Publishing {num_events} telemetry events to SQS queue {queue_url}...")
+        
+        for i in range(num_events):
+            progress = i / max(1, num_events - 1)
+            air_temp = 298.0 + progress * (304.5 - 298.0)
+            proc_temp = 308.0 + progress * (315.8 - 308.0)
+            speed = int(1500.0 + progress * (2350.0 - 1500.0))
+            torque = 40.0 + progress * (68.2 - 40.0)
+            wear = 50.0 + progress * (195.0 - 50.0)
+            
+            payload = {
+                "machine_id": machine_id,
+                "air_temperature": air_temp,
+                "process_temperature": proc_temp,
+                "rotational_speed": speed,
+                "torque": torque,
+                "tool_wear": wear,
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+            
+            try:
+                sqs.send_message(QueueUrl=queue_url, MessageBody=json.dumps(payload))
+                print(f"SensorSimulator: Sent SQS Event {i+1}/{num_events} for machine {machine_id}")
+            except Exception as e:
+                print(f"SensorSimulator Error: failed to send message: {e}")
+                
+            time.sleep(interval_seconds)
+
 
 def main():
     """Demo: Generate and save simulated data."""
