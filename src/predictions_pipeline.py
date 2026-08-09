@@ -5,22 +5,27 @@ Implements STEP 7 (Store Predictions) and STEP 8 (Rule-based Recommendations)
 
 import os
 import sys
+from pathlib import Path
 
-# Set cache directories and add venv site-packages to python system path
-workspace_dir = "/Users/piyushisinghal/Downloads/FixForesight"
-cache_dir = os.path.join(workspace_dir, "tmp", "cache")
-os.makedirs(cache_dir, exist_ok=True)
-os.environ["XDG_CACHE_HOME"] = cache_dir
-os.environ["JOBLIB_TEMP_FOLDER"] = cache_dir
-os.environ["MPLCONFIGDIR"] = cache_dir
-os.environ["PYTHON_EGG_CACHE"] = cache_dir
+# Resolve PROJECT_ROOT based on file location (src/predictions_pipeline.py -> Project Root)
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
-sys.path.insert(0, "/Users/piyushisinghal/Downloads/FixForesight/venv/lib/python3.14/site-packages")
-sys.path.insert(0, workspace_dir)
-sys.path.insert(0, os.path.join(workspace_dir, "src"))
+# Set cache directories
+cache_dir = PROJECT_ROOT / "tmp" / "cache"
+cache_dir.mkdir(parents=True, exist_ok=True)
+os.environ["XDG_CACHE_HOME"] = str(cache_dir)
+os.environ["JOBLIB_TEMP_FOLDER"] = str(cache_dir)
+os.environ["MPLCONFIGDIR"] = str(cache_dir)
+os.environ["PYTHON_EGG_CACHE"] = str(cache_dir)
+
+# Add project root and src directory to python sys.path if not present
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+src_dir = PROJECT_ROOT / "src"
+if str(src_dir) not in sys.path:
+    sys.path.insert(0, str(src_dir))
 
 import pandas as pd
-from pathlib import Path
 
 from backend.database.connection import SessionLocal
 from backend.database.models import Machine, Prediction, Recommendation
@@ -32,9 +37,9 @@ def run_predictions_pipeline(limit=100):
     print("=" * 80)
 
     # 1. Locate dataset
-    data_path = Path(workspace_dir) / "data" / "engineered_ai4i.csv"
+    data_path = PROJECT_ROOT / "data" / "engineered_ai4i.csv"
     if not data_path.exists():
-        data_path = Path(workspace_dir) / "data" / "ai4i2020_cleaned.csv"
+        data_path = PROJECT_ROOT / "data" / "ai4i2020_cleaned.csv"
         
     if not data_path.exists():
         print(f"Error: Telemetry dataset not found at {data_path}")

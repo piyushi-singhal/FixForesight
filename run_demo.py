@@ -12,19 +12,25 @@ import sys
 import json
 import sqlite3
 from datetime import datetime
+from pathlib import Path
 
-# Setup paths for importing modules and venv dependencies
-workspace_dir = "/Users/piyushisinghal/Downloads/FixForesight"
-sys.path.insert(0, os.path.join(workspace_dir, "venv/lib/python3.14/site-packages"))
-sys.path.insert(0, os.path.join(workspace_dir, "src"))
+# Resolve PROJECT_ROOT based on file location (run_demo.py is in project root)
+PROJECT_ROOT = Path(__file__).resolve().parent
 
 # Set cache directories to workspace-local paths to prevent sandbox violations
-cache_dir = os.path.join(workspace_dir, "tmp", "cache")
-os.makedirs(cache_dir, exist_ok=True)
-os.environ["XDG_CACHE_HOME"] = cache_dir
-os.environ["JOBLIB_TEMP_FOLDER"] = cache_dir
-os.environ["MPLCONFIGDIR"] = cache_dir
-os.environ["PYTHON_EGG_CACHE"] = cache_dir
+cache_dir = PROJECT_ROOT / "tmp" / "cache"
+cache_dir.mkdir(parents=True, exist_ok=True)
+os.environ["XDG_CACHE_HOME"] = str(cache_dir)
+os.environ["JOBLIB_TEMP_FOLDER"] = str(cache_dir)
+os.environ["MPLCONFIGDIR"] = str(cache_dir)
+os.environ["PYTHON_EGG_CACHE"] = str(cache_dir)
+
+# Setup paths for importing modules
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+src_dir = PROJECT_ROOT / "src"
+if str(src_dir) not in sys.path:
+    sys.path.insert(0, str(src_dir))
 
 # Import local modules from src/
 try:
@@ -40,7 +46,7 @@ def print_separator(title):
     print("=" * 80)
 
 def get_db_connection():
-    return sqlite3.connect(os.path.join(workspace_dir, "pdm_db.db"))
+    return sqlite3.connect(str(PROJECT_ROOT / "pdm_db.db"))
 
 def predict_machine_failure(air_temp, proc_temp, speed, torque, wear):
     """Replicates the model loading and inference logic from the backend service."""
@@ -48,8 +54,8 @@ def predict_machine_failure(air_temp, proc_temp, speed, torque, wear):
         import joblib
         import numpy as np
         
-        best_model = joblib.load(os.path.join(workspace_dir, "models", "best_model.pkl"))
-        scaler = joblib.load(os.path.join(workspace_dir, "models", "scaler.pkl"))
+        best_model = joblib.load(str(PROJECT_ROOT / "models" / "best_model.pkl"))
+        scaler = joblib.load(str(PROJECT_ROOT / "models" / "scaler.pkl"))
         
         n_features = getattr(scaler, "n_features_in_", 5)
         if n_features == 5:

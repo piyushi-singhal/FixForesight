@@ -1,9 +1,12 @@
 import os
 import sys
 
-workspace_dir = "/Users/piyushisinghal/Downloads/FixForesight"
-sys.path.insert(0, workspace_dir)
-os.environ["PYTHONPATH"] = workspace_dir
+from pathlib import Path
+
+# Resolve PROJECT_ROOT based on file location (tmp/run_uvicorn.py -> Project Root)
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
+os.environ["PYTHONPATH"] = str(PROJECT_ROOT)
 
 import uvicorn
 

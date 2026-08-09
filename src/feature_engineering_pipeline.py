@@ -301,16 +301,30 @@ def main():
     if to_drop:
         df = df.drop(columns=to_drop)
 
+    # Standardize column names to clean canonical names
+    mapping = {
+        "Air temperature [K]": "air_temperature",
+        "Process temperature [K]": "process_temperature",
+        "Rotational speed [rpm]": "rotational_speed",
+        "Torque [Nm]": "torque",
+        "Tool wear [min]": "tool_wear"
+    }
+    df = df.rename(columns=mapping)
+
+    final_features = [
+        "air_temperature",
+        "process_temperature",
+        "rotational_speed",
+        "torque",
+        "tool_wear"
+    ]
+
     # Prepare X and y
-    feature_cols = [c for c in df.select_dtypes(include=[np.number]).columns.tolist() if c != target_col]
-    X = df[feature_cols].fillna(0)
+    X = df[final_features].fillna(0)
     y = df[target_col]
 
-    # Random Forest feature importance and selection
+    # Random Forest feature importance for visualizations
     importances, selected = feature_selection_random_forest(X, y)
-
-    # Final feature list
-    final_features = selected
 
     # Scaling and splitting
     X_train_s, X_val_s, X_test_s, y_train, y_val, y_test, scaler = scale_and_split(

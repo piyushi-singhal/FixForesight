@@ -58,27 +58,26 @@ def prepare_xy(df: pd.DataFrame, target_col: str = "Machine failure"):
         else:
             raise KeyError(f"Target column '{target_col}' not found in dataframe")
 
-    drop_cols = [
-        "Machine failure",
-        "TWF",
-        "HDF",
-        "PWF",
-        "OSF",
-        "RNF"
+    mapping = {
+        "Air temperature [K]": "air_temperature",
+        "Process temperature [K]": "process_temperature",
+        "Rotational speed [rpm]": "rotational_speed",
+        "Torque [Nm]": "torque",
+        "Tool wear [min]": "tool_wear"
+    }
+    for orig, clean in mapping.items():
+        if orig in df.columns:
+            df[clean] = df[orig]
+
+    feature_cols = [
+        "air_temperature",
+        "process_temperature",
+        "rotational_speed",
+        "torque",
+        "tool_wear"
     ]
-
-    X = df.drop(columns=drop_cols, errors="ignore")
-    X = X.select_dtypes(include=[np.number])
-
-    y = df["Machine failure"]
-
-    X.columns = [
-        col.replace('[', '_')
-           .replace(']', '_')
-           .replace('<', '_')
-           .replace('>', '_')
-        for col in X.columns
-    ]
+    X = df[feature_cols].fillna(0)
+    y = df[target_col].astype(int)
 
     return X, y
 
@@ -243,8 +242,14 @@ def run_pipeline():
     # Split
     X_train, X_test, y_train, y_test = stratified_split(X, y, test_size=0.2)
 
+    # Fit scaler on training features
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    X_train_scaled = pd.DataFrame(scaler.fit_transform(X_train), columns=X_train.columns)
+    X_test_scaled = pd.DataFrame(scaler.transform(X_test), columns=X_test.columns)
+
     # Handle imbalance
-    X_train_bal, y_train_bal = imbalance_strategy(X_train, y_train)
+    X_train_bal, y_train_bal = imbalance_strategy(X_train_scaled, y_train)
 
     models = get_models()
     params = param_distributions()
@@ -272,7 +277,7 @@ def run_pipeline():
             LOG.warning(f"RandomizedSearchCV failed for {name}: {e}; fitting default model")
             best = model.fit(X_train_bal, y_train_bal)
 
-        metrics, y_proba = evaluate_model(best, X_test, y_test)
+        metrics, y_proba = evaluate_model(best, X_test_scaled, y_test)
         # capture feature importances if available
         fi = None
         if hasattr(best, "feature_importances_"):
@@ -311,12 +316,17 @@ def run_pipeline():
     best_name = comp_sorted.index[0]
     best_model = results[best_name]["model"]
 
-    # Save best model
+    # Save best model, scaler, and features
     joblib.dump(best_model, out_models / "best_model.pkl")
+    joblib.dump(scaler, out_models / "scaler.pkl")
+    joblib.dump(X.columns.tolist(), out_models / "selected_features.pkl")
+    
     LOG.info(f"Saved best model ({best_name}) to {out_models / 'best_model.pkl'}")
+    LOG.info(f"Saved scaler to {out_models / 'scaler.pkl'}")
+    LOG.info(f"Saved selected features to {out_models / 'selected_features.pkl'}")
 
     # Plots
-    plot_roc_curves(results, X_test, y_test, out_reports)
+    plot_roc_curves(results, X_test_scaled, y_test, out_reports)
     plot_confusion_matrices(results, out_reports)
     plot_feature_importances(results, X.columns.tolist(), out_reports)
 
