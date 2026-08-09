@@ -1,0 +1,48 @@
+graph TB
+    subgraph DATA["Data Sources"]
+        CSV["CSV Dataset<br/>data/engineered_ai4i.csv<br/>AI4I 2020 — 10,000 rows"]
+        SIM["Sensor Simulator<br/>src/sensor_simulator.py"]
+    end
+
+    subgraph ML["ML Plane"]
+        FE["Feature Engineering<br/>src/feature_engineering_pipeline.py"]
+        MODEL["GradientBoostingClassifier<br/>models/best_model.pkl<br/>+ models/scaler.pkl"]
+        REC["Recommendation Engine<br/>src/recommendation_engine.py"]
+    end
+
+    subgraph INFRA["Infrastructure (Docker Compose)"]
+        SQS["LocalStack SQS<br/>sensor-events queue<br/>:4566"]
+        SNS["LocalStack SNS<br/>maintenance-alerts topic<br/>:4566"]
+        S3["LocalStack S3<br/>iot-raw-data bucket<br/>:4566"]
+        SOLR["Apache Solr<br/>incidents core<br/>:8983"]
+        PG["PostgreSQL<br/>pdm_db<br/>:5432"]
+    end
+
+    subgraph API["Backend — FastAPI :8000"]
+        MAIN["main.py<br/>startup pipeline + CORS"]
+        ROUTES["Routes:<br/>/machines /predictions<br/>/recommendations /alerts<br/>/work-orders /analytics<br/>/dashboard /search"]
+        CONSUMER["SQS Consumer Thread<br/>daemon background thread"]
+    end
+
+    subgraph FE_UI["Frontend — React :3000"]
+        DASH["Dashboard"]
+        MDET["Machine Detail"]
+        WO["Work Orders"]
+        SEARCH["Search"]
+        ANA["Analytics"]
+    end
+
+    CSV -->|batch ingest| FE
+    SIM -->|telemetry events| SQS
+    SQS -->|messages| CONSUMER
+    CONSUMER -->|process_single_telemetry| MODEL
+    FE -->|scaled features| MODEL
+    MODEL -->|failure probability| REC
+    REC -->|recommendations| PG
+    MODEL -->|predictions| PG
+    MAIN -->|startup: run_predictions_pipeline| FE
+    MAIN -->|startup: sync_data_to_solr| SOLR
+    ROUTES -->|query/write| PG
+    ROUTES -->|search_incidents| SOLR
+    API -->|alerts/webhook| SNS
+    FE_UI -->|REST API calls| ROUTES

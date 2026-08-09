@@ -1,382 +1,232 @@
-# Industrial AI Predictive Maintenance Platform
+# FixForesight
 
-A comprehensive machine learning and big data engineering solution for predictive maintenance in manufacturing environments. The platform simulates real-time sensor data, processes it through a data pipeline, predicts machine failures using TensorFlow, and generates maintenance recommendations.
+> **Predictive and Prescriptive Maintenance System for Industrial Machinery**
 
-## 🎯 Project Vision
-
-Transform manufacturing operations by predicting equipment failures **before** they occur, minimizing downtime, reducing costs, and optimizing maintenance schedules through AI-driven insights.
-
-## 🏗️ Architecture
-
-```
-Sensors → Simulator → Feature Engineering → ML Models → Recommendations → Database → Dashboard
-```
-
-## 📦 What's Included
-
-### Core Modules (3,500+ lines of production code)
-
-| Module | Purpose | Status |
-|--------|---------|--------|
-| **Database Schema** | 11 tables, 3 views, optimized indexes | ✅ Complete |
-| **Sensor Simulator** | Realistic data generation with failure scenarios | ✅ Complete |
-| **Feature Engineering** | 18+ engineered features for ML | ✅ Complete |
-| **ML Pipeline** | 3 model types with evaluation metrics | ✅ Complete |
-| **Recommendation Engine** | Intelligent maintenance suggestions | ✅ Complete |
-| **Data Pipeline** | CSV & streaming data ingestion | ✅ Complete |
-
-### Deliverables
-
-```
-src/
-├── database_schema.sql         - PostgreSQL schema (14KB)
-├── sensor_simulator.py         - Data generation (15KB)
-├── ml_pipeline.py              - ML models & training (14KB)
-├── recommendation_engine.py    - Recommendations (19KB)
-├── data_pipeline.py            - Data ingestion (18KB)
-├── clean_dataset.py            - Data cleaning
-└── engineer_features.py        - Feature engineering
-
-Documentation/
-├── QUICKSTART.md               - Complete getting-started guide
-├── IMPLEMENTATION_SUMMARY.md   - Detailed component breakdown
-├── requirements.txt            - Python dependencies
-├── config.ini                  - Configuration template
-
-Testing/
-└── tests_integration.py        - Comprehensive integration tests (11KB)
-```
-
-## 🚀 Quick Start
-
-### Installation (5 minutes)
-
-```bash
-# 1. Clone repository
-cd Industrial-AI-Project
-
-# 2. Create virtual environment
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Setup PostgreSQL
-psql -U postgres -d predictive_maintenance -f src/database_schema.sql
-```
-
-### Run the Pipeline (10 minutes)
-
-```bash
-# 1. Generate synthetic sensor data
-python src/sensor_simulator.py
-
-# 2. Engineer features
-python src/engineer_features.py
-
-# 3. Train ML models
-python src/ml_pipeline.py
-
-# 4. Generate recommendations
-python src/recommendation_engine.py
-
-# 5. Ingest to database
-python src/data_pipeline.py
-```
-
-### Verify Everything Works
-
-```bash
-# Run integration tests
-python tests_integration.py
-```
-
-## 📊 Key Features
-
-### 1. Sensor Data Simulator
-- **Realistic Patterns**: Stochastic variations matching real equipment
-- **5 Failure Scenarios**: Heat dissipation, power loss, overstrain, tool wear, random
-- **Degradation Curves**: Progressive sensor anomalies leading to failure
-- **Multi-Machine Support**: Simulate entire production floor
-
-```python
-from sensor_simulator import SensorSimulator
-simulator = SensorSimulator()
-df = simulator.generate_failure_scenario('heat_dissipation')
-```
-
-### 2. Feature Engineering
-- **Temporal**: Hour, day of week, day of month
-- **Domain**: Temperature diff, power (RPM×Torque), wear rate, stress indicators
-- **Statistical**: Rolling mean/std with configurable windows
-- **Automatic**: Handles missing values, normalizes ranges
-
-**18+ Features Generated Automatically**
-
-### 3. Machine Learning
-- **Gradient Boosting** - Best accuracy (~94%), fast training
-- **Random Forest** - Interpretable, feature importance
-- **LSTM** - Temporal sequences, deep learning
-
-**Metrics**: Accuracy, Precision, Recall, F1, ROC-AUC
-
-### 4. Intelligent Recommendations
-- **Risk Assessment**: 4-level scoring (low → critical)
-- **Smart Actions**: Context-aware maintenance instructions
-- **Spare Parts**: Pre-configured parts catalog with costs
-- **Scheduling**: Automatic maintenance task scheduling
-- **Cost Estimation**: Parts + labor hour calculations
-
-### 5. Data Pipeline
-- **Batch Processing**: CSV ingestion with validation
-- **Streaming Support**: SQS message parsing
-- **Database**: Optimized PostgreSQL writes (5,000+ rows/sec)
-- **Error Handling**: Comprehensive logging and recovery
-
-## 🎓 Database Design
-
-### 11 Core Tables
-```
-machines ─┬─→ sensors ─────→ sensor_readings
-          │                      ↓
-          ├─→ predictions ───→ recommendations
-          │                      ↓
-          ├─→ failure_events ────┤
-          │                      ↓
-          ├─→ alerts            [stored as JSON]
-          ├─→ maintenance_history
-          ├─→ engineered_features
-          └─→ ml_models
-```
-
-### 3 Analytical Views
-- `latest_predictions` - Current machine health status
-- `outstanding_recommendations` - Pending maintenance tasks
-- `machine_health_summary` - Dashboard aggregation
-
-## 📈 Performance Benchmarks
-
-| Operation | Performance | Scale |
-|-----------|-------------|-------|
-| Data Generation | 10,000 samples/sec | 1M records |
-| Feature Engineering | 50,000 rows/sec | 100M rows |
-| Model Training | <2 min | 100K samples |
-| Predictions | 1,000 samples/sec | Real-time |
-| Database Ingestion | 5,000 rows/sec | Streaming |
-
-## 🔍 Example Usage
-
-### Generate Recommendations
-```python
-from recommendation_engine import RecommendationEngine
-
-engine = RecommendationEngine()
-
-rec = engine.generate_recommendation(
-    machine_id=1,
-    prediction_id=101,
-    failure_type='heat_dissipation',
-    failure_probability=0.85,
-    days_to_failure=2
-)
-
-print(f"Priority: {rec.priority}")  # "critical"
-print(f"Cost: ${rec.estimated_cost:.2f}")  # "$1150.00"
-print(f"Actions: {rec.action}")  # Detailed maintenance steps
-print(f"Parts: {[p.part_name for p in rec.spare_parts]}")
-```
-
-### Train ML Model
-```python
-from ml_pipeline import PredictiveMaintenanceModel
-
-model = PredictiveMaintenanceModel(model_type='gradient_boosting')
-X_train, X_test, y_train, y_test = model.prepare_data(df)
-model.train(X_train, y_train)
-
-metrics = model.evaluate(X_test, y_test)
-# {'accuracy': 0.94, 'f1': 0.91, 'auc': 0.97}
-
-model.save_model('models/')
-```
-
-### Ingest Data
-```python
-from data_pipeline import DataIngestionPipeline
-
-pipeline = DataIngestionPipeline()
-total_rows = pipeline.ingest_sensor_data('data/sensor_readings.csv')
-print(f"Ingested {total_rows} rows")
-
-pipeline.process_predictions(predictions_list)
-pipeline.store_recommendations(recommendations_list)
-```
-
-## 🔐 Production Ready
-
-✅ Error handling with logging  
-✅ Type hints and documentation  
-✅ Configuration management  
-✅ Data validation  
-✅ Connection pooling  
-✅ Transaction management  
-✅ Audit logging  
-✅ Partitioning support (for million+ rows)  
-
-## 📚 Documentation
-
-- **[QUICKSTART.md](QUICKSTART.md)** - Getting started in 5 minutes
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Detailed component breakdown
-- **[src/database_schema.sql](src/database_schema.sql)** - Schema with comments
-- **Inline Comments** - Throughout all Python code
-
-## 🧪 Testing
-
-### Run Integration Tests
-```bash
-python tests_integration.py
-```
-
-**Tests Cover:**
-- Sensor data simulation
-- Feature engineering
-- ML model training
-- Recommendation generation
-- Data processing & validation
-
-## 🛠️ Configuration
-
-Edit `config.ini` to customize:
-- Database credentials
-- AWS endpoints
-- ML model parameters
-- Alert thresholds
-- Data retention policies
-
-## 🚢 Deployment
-
-### Docker
-```dockerfile
-FROM python:3.9
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-COPY src/ ./
-CMD ["python", "data_pipeline.py"]
-```
-
-### AWS Deployment
-- **RDS** - PostgreSQL database
-- **SQS** - Message queue for sensor data
-- **SNS** - Notifications for alerts
-- **S3** - Data storage and models
-- **CloudFormation** - Infrastructure as code
-
-## 📊 Expected Output
-
-### Sensor Data
-```
-timestamp,machine_id,air_temperature,process_temperature,rotational_speed,...
-2024-01-15 10:00:00,1,303.2,320.5,2100,45.3,75,12.5
-2024-01-15 10:01:00,1,303.1,320.6,2105,45.2,76,12.6
-...
-```
-
-### Predictions
-```
-machine_id: 1
-failure_probability: 0.85
-risk_level: critical
-days_to_failure: 2
-failure_type: heat_dissipation
-confidence_score: 0.92
-```
-
-### Recommendations
-```
-Machine 1: CRITICAL ALERT
-├── Action: Replace cooling fan within 24 hours
-├── Priority: CRITICAL
-├── Cost: $1,150.00
-├── Spare Parts:
-│   ├── Cooling Fan Assembly (x1) - $450
-│   └── Thermal Grease 500ml (x2) - $160
-└── Timeline: Immediate
-```
-
-## 🎯 Roadmap
-
-### Phase 1 ✅ Complete
-- Database schema
-- Sensor simulator
-- Feature engineering
-- ML models
-- Recommendations
-- Data pipeline
-
-### Phase 2 (Ready to Deploy)
-- AWS SQS integration
-- Apache Spark streaming
-- Real-time dashboards
-- API endpoints
-- Model monitoring
-
-### Phase 3 (Future)
-- AutoML for hyperparameter tuning
-- Advanced anomaly detection
-- Supply chain optimization
-- Predictive spares ordering
-
-## 📞 Support
-
-### Documentation Files
-- `QUICKSTART.md` - Getting started
-- `IMPLEMENTATION_SUMMARY.md` - Technical details
-- Source code comments - Implementation details
-
-### Troubleshooting
-See QUICKSTART.md section "Troubleshooting"
-
-## 👥 Team Responsibilities
-
-- **Data Engineering**: Database schema, data pipeline
-- **ML Engineering**: Feature engineering, model training
-- **Backend**: API development, database optimization
-- **DevOps**: Deployment, scaling, monitoring
-- **Frontend**: Dashboard, visualization, UX
-
-## 📄 License
-
-Proprietary - Industrial AI Platform
-
-## 📅 Timeline
-
-- **Phase 1**: 2 weeks (COMPLETE ✅)
-- **Phase 2**: 3-4 weeks (Ready to start)
-- **Phase 3**: Ongoing optimization
-
-## 🏆 Key Achievements
-
-✨ **3,500+ lines** of production-ready code  
-✨ **11 database tables** with optimized indexes  
-✨ **18+ engineered features** for ML  
-✨ **3 model types** with comprehensive evaluation  
-✨ **50+ maintenance templates** for all failure modes  
-✨ **Comprehensive testing** with integration tests  
-✨ **Production-ready** error handling & logging  
-
-## 📊 Metrics to Track
-
-- Model accuracy and ROC-AUC
-- Maintenance cost reduction
-- Equipment downtime reduction
-- Prediction accuracy (% correctly predicted failures)
-- Data pipeline latency
-- Database query performance
+FixForesight ingests industrial sensor telemetry, predicts equipment failures using machine learning, prescribes targeted maintenance actions, and delivers results through a REST API and browser dashboard. It is built to demonstrate an end-to-end ML system with a cloud-native simulated infrastructure stack.
 
 ---
 
-**Ready to revolutionize manufacturing maintenance! 🚀**
+## Architecture
 
-For detailed instructions, see [QUICKSTART.md](QUICKSTART.md)
+```
+Sensor Telemetry / CSV Dataset
+         ↓
+Feature Engineering  (src/feature_engineering_pipeline.py)
+         ↓
+GradientBoostingClassifier  (models/best_model.pkl + scaler.pkl)
+         ↓
+Failure Probability + Failure Type + Time-to-Failure
+         ↓
+Recommendation Engine  (src/recommendation_engine.py)
+         ↓
+PostgreSQL ←—→ FastAPI (:8000)
+         ↓
+React + Redux Dashboard (:3000)
+```
+
+```
+LocalStack (SQS/SNS/S3) ←—→ Sensor Simulator
+                                    ↓
+                            SQS Consumer Thread
+                                    ↓
+                            ML Inference → PostgreSQL
+                                    ↓
+                            SNS Alert → /alerts/webhook
+```
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| ML Framework | scikit-learn (GradientBoostingClassifier, RobustScaler) |
+| Backend API | FastAPI + Uvicorn |
+| Database | PostgreSQL 15 + SQLAlchemy ORM + Alembic |
+| Cloud Simulation | LocalStack (S3, SQS, SNS) |
+| Search | Apache Solr 9 |
+| Frontend | React + Redux Toolkit + TypeScript |
+| Containerisation | Docker + Docker Compose |
+| Dataset | AI4I 2020 Predictive Maintenance (UCI ML Repository) |
+
+---
+
+## Repository Structure
+
+```
+FixForesight/
+├── src/                    ← ML pipeline, sensor simulator, feature engineering
+├── models/                 ← Trained model artifacts (best_model.pkl, scaler.pkl)
+├── backend/                ← FastAPI application
+│   ├── routes/             ← API endpoints
+│   ├── services/           ← Business logic + ML inference
+│   ├── database/           ← SQLAlchemy models + connection
+│   └── schemas/            ← Pydantic request/response models
+├── frontend/               ← React SPA + HTML dashboard
+├── data/                   ← Dataset CSV files
+├── infra/                  ← LocalStack init scripts
+├── docs/                   ← Full documentation
+├── docker-compose.yml
+├── alembic.ini
+└── requirements.txt
+```
+
+---
+
+## Quick Start
+
+### Local Development (no Docker required)
+
+```bash
+git clone https://github.com/piyushi-singhal/FixForesight.git
+cd FixForesight
+
+# Setup environment
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install -r backend/requirements.txt
+
+# Start backend (uses SQLite fallback if no Postgres)
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
+
+# Open dashboard: http://localhost:8000
+```
+
+### Docker (Full Stack)
+
+> ⚠️ **See [known issue](docs/14-project-status/known-issues.md#ki-001):** Add `COPY data/ /app/data/` to `backend/Dockerfile` before running.
+
+```bash
+docker-compose up --build
+```
+
+| Service | URL |
+|---|---|
+| Dashboard | http://localhost:8000 |
+| API Docs | http://localhost:8000/docs |
+| React App | http://localhost:3000 |
+| Solr Admin | http://localhost:8983/solr |
+
+---
+
+## API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/machines` | All machines with telemetry + predictions |
+| GET | `/machines/{id}/risk` | Risk assessment for a machine |
+| POST | `/machines/{id}/simulate` | Trigger SQS sensor simulation |
+| GET | `/predictions` | All failure predictions |
+| POST | `/predictions/pipeline` | Run batch prediction pipeline |
+| GET | `/recommendations` | All maintenance recommendations |
+| GET | `/alerts` | All system alerts |
+| POST | `/alerts/webhook` | SNS alert webhook receiver |
+| GET | `/work-orders` | All work orders |
+| POST | `/work-orders` | Create work order |
+| PATCH | `/work-orders/{id}/status` | Update work order status |
+| GET | `/analytics` | Fleet status summary |
+| GET | `/analytics/feature-importance` | ML feature importances |
+| GET | `/analytics/model-monitoring` | Model evaluation metrics |
+| GET | `/dashboard` | Dashboard KPIs |
+| GET | `/search?q=` | Full-text search (Solr) |
+| GET | `/health` | System health check |
+
+---
+
+## ML Pipeline
+
+- **Dataset:** AI4I 2020 Predictive Maintenance — 10,000 rows, ~3.4% failure rate
+- **Feature contract:** 5 raw features: `air_temperature, process_temperature, rotational_speed, torque, tool_wear`
+- **Scaler:** `RobustScaler` (robust to sensor outliers)
+- **Models trained:** GradientBoosting, RandomForest, LogisticRegression
+- **Production model:** GradientBoostingClassifier (`models/best_model.pkl`)
+
+| Metric | Value |
+|---|---|
+| Accuracy | 98.45% |
+| Precision | 84.91% |
+| Recall | 66.18% |
+| F1 | 74.38% |
+| ROC-AUC | 0.9618 |
+
+---
+
+## Database
+
+**PostgreSQL `pdm_db`** — 6 tables:
+
+`machines` → `predictions` → `recommendations` → `work_orders`  
+`machines` → `alerts`  
+`parts_inventory` (standalone)
+
+Schema managed by Alembic migrations (`alembic upgrade head` at startup).
+
+---
+
+## Testing
+
+```bash
+# Component tests (no server required)
+python tests_integration.py
+
+# API end-to-end tests (requires running backend)
+python tests_api_e2e.py
+```
+
+---
+
+## Documentation
+
+Full engineering-grade documentation: **[docs/README.md](docs/README.md)**
+
+| Section | Link |
+|---|---|
+| Project Overview | [docs/01-project-overview/](docs/01-project-overview/project-overview.md) |
+| System Architecture | [docs/02-architecture/](docs/02-architecture/system-architecture.md) |
+| Database Design + ER Diagram | [docs/03-database/](docs/03-database/database-design.md) |
+| Data Engineering | [docs/04-data-engineering/](docs/04-data-engineering/data-pipeline.md) |
+| Machine Learning | [docs/05-machine-learning/](docs/05-machine-learning/ml-overview.md) |
+| Backend API Reference | [docs/06-backend/](docs/06-backend/api-reference.md) |
+| Frontend Architecture | [docs/07-frontend/](docs/07-frontend/frontend-architecture.md) |
+| Infrastructure (Docker/SQS/Solr) | [docs/08-infrastructure/](docs/08-infrastructure/docker.md) |
+| Testing | [docs/09-testing/](docs/09-testing/testing-strategy.md) |
+| Deployment | [docs/10-deployment/](docs/10-deployment/local-setup.md) |
+| Security | [docs/11-security/](docs/11-security/security-overview.md) |
+| Architecture Decisions | [docs/12-architecture-decisions/](docs/12-architecture-decisions/architecture-decision-records.md) |
+| Troubleshooting | [docs/13-troubleshooting/](docs/13-troubleshooting/troubleshooting.md) |
+| Project Status & Roadmap | [docs/14-project-status/](docs/14-project-status/current-status.md) |
+
+---
+
+## Current Status
+
+| Component | Status |
+|---|---|
+| ML pipeline (training + inference) | ✅ Complete |
+| FastAPI backend (all endpoints) | ✅ Complete |
+| Database (PostgreSQL + Alembic) | ✅ Complete |
+| React + HTML dashboards | ✅ Complete |
+| Work order lifecycle | ✅ Complete |
+| SQS consumer thread | ✅ Complete |
+| SNS webhook | ✅ Complete |
+| Solr search | ✅ Complete |
+| Docker stack | 🟡 Partial (`data/` not in image) |
+| Model monitoring (live) | 🟡 Partial (hardcoded metrics) |
+| Authentication | ❌ Not implemented |
+
+See [Known Issues](docs/14-project-status/known-issues.md) and [Roadmap](docs/14-project-status/roadmap.md).
+
+---
+
+## Known Limitations
+
+1. **No authentication** — all API endpoints are open
+2. **`data/` not in Docker image** — startup pipeline fails in full Docker deployment
+3. **Model monitoring metrics are hardcoded** — not computed dynamically
+4. **S3 bucket exists but is unused** — placeholder only
+5. **Batch pipeline, not streaming** — primary data path reads CSV; SQS handles individual events
+
+---
+
+*Built with scikit-learn, FastAPI, PostgreSQL, React, LocalStack, Apache Solr, and Docker.*

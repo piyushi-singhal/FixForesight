@@ -1,0 +1,65 @@
+erDiagram
+    machines {
+        string machine_id PK "VARCHAR(50)"
+        string machine_name "VARCHAR(100)"
+        string status "Healthy|Warning|Critical"
+        float air_temperature
+        float process_temperature
+        int rotational_speed
+        float torque
+        float tool_wear
+        datetime created_at
+    }
+
+    predictions {
+        int prediction_id PK "SERIAL"
+        string machine_id FK
+        float failure_probability "0-100 (percentage)"
+        string predicted_failure "VARCHAR(255)"
+        string time_to_failure "VARCHAR(100)"
+        datetime created_at
+    }
+
+    recommendations {
+        int recommendation_id PK "SERIAL"
+        string machine_id FK
+        int prediction_id FK "nullable"
+        text recommendation
+        string priority "Critical|Medium|Low"
+        float confidence "0-100 (percentage)"
+        datetime created_at
+    }
+
+    alerts {
+        int alert_id PK "SERIAL"
+        string machine_id FK
+        string severity "Critical|Warning"
+        text message
+        datetime created_at
+    }
+
+    work_orders {
+        int id PK "SERIAL"
+        string machine_id FK
+        int recommendation_id FK "nullable, SET NULL"
+        string status "open|in_progress|completed"
+        string priority "VARCHAR(50)"
+        text action_required
+        datetime created_at
+        datetime completed_at "nullable"
+    }
+
+    parts_inventory {
+        int part_id PK "SERIAL"
+        string part_name "UNIQUE VARCHAR(100)"
+        int quantity
+        int min_required
+        float unit_cost
+    }
+
+    machines ||--o{ predictions : "has"
+    machines ||--o{ recommendations : "has"
+    machines ||--o{ alerts : "generates"
+    machines ||--o{ work_orders : "requires"
+    predictions ||--o| recommendations : "triggers"
+    recommendations ||--o{ work_orders : "spawns"

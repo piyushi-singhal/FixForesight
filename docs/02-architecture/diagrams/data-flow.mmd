@@ -1,0 +1,20 @@
+flowchart LR
+    A["Raw Dataset<br/>data/FixForesightdataset.csv"]
+    B["Data Cleaning<br/>src/clean_dataset.py<br/>→ data/ai4i2020_cleaned.csv"]
+    C["Feature Engineering<br/>src/feature_engineering_pipeline.py<br/>→ data/engineered_ai4i.csv"]
+    D["ML Training<br/>src/ml_pipeline.py<br/>PredictiveMaintenanceModel"]
+    E["Model Artifacts<br/>models/best_model.pkl<br/>models/scaler.pkl<br/>models/*_features.json"]
+    F["Predictions Pipeline<br/>src/predictions_pipeline.py<br/>run_predictions_pipeline()"]
+    G["ML Inference<br/>db_service.predict_machine_failure()<br/>→ probability, failure_type, time_to_fail"]
+    H["Recommendation Engine<br/>src/recommendation_engine.py<br/>rule-based thresholds"]
+    I["PostgreSQL<br/>machines + predictions<br/>+ recommendations tables"]
+    J["Solr Sync<br/>db_service.sync_data_to_solr()"]
+    K["FastAPI Routes<br/>GET /predictions<br/>GET /recommendations<br/>GET /machines"]
+    L["React Dashboard<br/>Redux store → UI"]
+
+    A --> B --> C --> D --> E
+    C -->|"data/engineered_ai4i.csv"| F
+    E -->|"loaded at startup"| G
+    F --> G --> H --> I
+    I --> J
+    I --> K --> L

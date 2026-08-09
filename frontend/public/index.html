@@ -979,7 +979,7 @@
 
                             <div style="display: flex; flex-direction: column; gap: 24px;">
                                 <div id="specs-vitals-container"></div>
-                                <div class="machine-detail-grid">
+                                <div class="machine-detail-grid" style="grid-template-columns: 2fr 3fr 2.5fr;">
                                     <!-- Gauge -->
                                     <div class="glass-card risk-level-card">
                                         <h3 style="font-size: 14px; align-self: flex-start; color: var(--text-secondary);">Failure Risk Matrix</h3>
@@ -1013,6 +1013,15 @@
                                             </div>
                                         </div>
                                         <div class="chart-body" id="chart-svg-container">
+                                            <!-- Loaded dynamically -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Explainability -->
+                                    <div class="glass-card explainability-card" id="explainability-card" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; text-align: left; padding: 16px;">
+                                        <h3 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">Explainability</h3>
+                                        <h4 id="explain-why-title" style="font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: 14px;">Why is machine status?</h4>
+                                        <div id="explain-bars-container" style="width: 100%; display: flex; flex-direction: column; gap: 12px; font-size: 11px;">
                                             <!-- Loaded dynamically -->
                                         </div>
                                     </div>
@@ -1199,6 +1208,17 @@
                                 <p style="color: var(--text-secondary); font-size: 11px; margin-top: 2px;">Urgency breakdown of active recommendations.</p>
                             </div>
                             <div class="analytics-bars-container" id="analytics-priority-bars" style="display: flex; flex-direction: column; gap: 10px;">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Model Monitoring Card -->
+                        <div class="glass-card" style="display: flex; flex-direction: column; gap: 14px;">
+                            <div>
+                                <h3 class="card-title">ML Model Quality Metrics</h3>
+                                <p style="color: var(--text-secondary); font-size: 11px; margin-top: 2px;">Trained classifier model evaluation metrics.</p>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;" id="analytics-model-monitoring-metrics">
                                 <!-- Loaded dynamically -->
                             </div>
                         </div>

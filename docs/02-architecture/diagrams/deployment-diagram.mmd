@@ -1,0 +1,45 @@
+graph TB
+    subgraph HOST["Host Machine"]
+        subgraph COMPOSE["docker-compose.yml — pdm-network bridge"]
+            subgraph PG_C["postgres container"]
+                PG_IMG["postgres:15-alpine"]
+                PG_VOL["postgres_data volume"]
+                PG_INIT["schema.sql + seed.sql<br/>/docker-entrypoint-initdb.d/"]
+            end
+
+            subgraph LS_C["localstack container"]
+                LS_IMG["localstack/localstack:latest"]
+                LS_SVC["Services: s3, sqs, sns"]
+                LS_INIT["infra/localstack/init-resources.sh"]
+                LS_VOL["localstack_data volume"]
+            end
+
+            subgraph SOLR_C["solr container"]
+                SOLR_IMG["solr:9-alpine"]
+                SOLR_CORE["incidents core<br/>solr-precreate incidents"]
+                SOLR_VOL["solr_data volume"]
+            end
+
+            subgraph BE_C["backend container"]
+                BE_IMG["python:3.10-slim"]
+                BE_COPY["COPY backend/ src/ models/ config.ini"]
+                BE_CMD["uvicorn backend.main:app :8000"]
+                BE_DEP["depends_on: postgres LS SOLR"]
+            end
+
+            subgraph FE_C["frontend container"]
+                FE_IMG["nginx (built)"]
+                FE_CMD["serves React build :80 → host :3000"]
+                FE_DEP["depends_on: backend"]
+            end
+        end
+    end
+
+    PG_C -- ":5432" --> BE_C
+    LS_C -- ":4566" --> BE_C
+    SOLR_C -- ":8983" --> BE_C
+    BE_C -- ":8000" --> FE_C
+    FE_C -- ":3000" --> BROWSER["Browser"]
+
+    style HOST fill:#1a1a2e,color:#eee
+    style COMPOSE fill:#16213e,color:#eee

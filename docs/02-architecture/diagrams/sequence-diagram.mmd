@@ -1,0 +1,49 @@
+sequenceDiagram
+    participant FE as React Frontend
+    participant API as FastAPI
+    participant DB as PostgreSQL
+    participant ML as ML Model
+    participant SOLR as Apache Solr
+
+    Note over FE,SOLR: Startup Sequence (backend/main.py startup_pipeline)
+    API->>DB: alembic upgrade head
+    API->>ML: load best_model.pkl + scaler.pkl
+    API->>DB: run_predictions_pipeline(limit=100)
+    DB-->>API: machines/predictions/recs stored
+    API->>SOLR: sync_data_to_solr()
+    SOLR-->>API: indexed
+
+    Note over FE,SOLR: Normal Request Flow
+    FE->>API: GET /machines
+    API->>DB: SELECT machines + latest prediction
+    DB-->>API: machine rows
+    API-->>FE: JSON array of MachineResponse
+
+    FE->>API: GET /machines/{id}/risk
+    API->>DB: get_machine_risk(machine_id)
+    DB-->>API: risk data
+    API-->>FE: risk JSON
+
+    Note over FE,SOLR: Work Order Flow
+    FE->>API: POST /work-orders {machine_id, priority, action}
+    API->>DB: INSERT work_orders
+    DB-->>API: work_order_id
+    API-->>FE: {status: created, work_order_id}
+
+    FE->>API: PATCH /work-orders/{id}/status {status: in_progress}
+    API->>DB: UPDATE work_orders SET status
+    DB-->>API: updated work order
+    API-->>FE: {new_status: in_progress}
+
+    FE->>API: PATCH /work-orders/{id}/status {status: completed}
+    API->>DB: UPDATE SET status=completed, completed_at=now()
+    DB-->>API: updated
+    API-->>FE: {new_status: completed}
+
+    Note over FE,SOLR: SQS Consumer Flow (background thread)
+    loop Every 5 seconds
+        API->>API: SQS.receive_message(sensor-events)
+        API->>ML: predict_machine_failure(telemetry)
+        ML-->>API: probability, failure_type
+        API->>DB: upsert Machine + Prediction + Recommendation
+    end
