@@ -59,7 +59,7 @@ class PredictionResponse(BaseModel):
     rotational_speed: int
     torque: float
     tool_wear: float
-    failure_probability: float     # 0–100 (percentage)
+    failure_probability: float     
     predicted_failure: str
     time_to_failure: str
 ```
@@ -70,8 +70,8 @@ class RecommendationResponse(BaseModel):
     recommendation_id: Optional[int] = None
     machine_id: str
     recommendation: str
-    priority: str                  # Critical|Medium|Low
-    confidence: float              # 0–100 (percentage)
+    priority: str                 
+    confidence: float              
     prediction_id: Optional[int] = None
     created_at: str
 ```
