@@ -194,9 +194,19 @@ def startup_pipeline():
 
 
 # Enable CORS for cross-origin frontend requests
+allowed_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000"
+]
+env_origins = os.environ.get("ALLOWED_ORIGINS")
+if env_origins:
+    allowed_origins = [o.strip() for o in env_origins.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -224,8 +234,9 @@ def get_health():
     # Check Solr
     solr_status = "healthy"
     solr_url = os.environ.get("SOLR_URL", "http://localhost:8983/solr/incidents")
+    solr_base = solr_url.split("/incidents")[0] if "/incidents" in solr_url else solr_url
     try:
-        r = requests.get(f"{solr_url}/admin/cores?action=STATUS", timeout=1.0)
+        r = requests.get(f"{solr_base}/admin/cores?action=STATUS", timeout=1.0)
         if r.status_code != 200:
             solr_status = "unhealthy"
     except Exception:
@@ -240,13 +251,26 @@ def get_health():
     except Exception:
         localstack_status = "unhealthy"
 
+    # Check PostgreSQL
+    postgres_status = "healthy"
+    try:
+        from backend.database.connection import SessionLocal
+        from sqlalchemy import text
+        db = SessionLocal()
+        try:
+            db.execute(text("SELECT 1"))
+        finally:
+            db.close()
+    except Exception:
+        postgres_status = "unhealthy"
+
     overall_status = "healthy"
-    if solr_status == "unhealthy" or localstack_status == "unhealthy":
+    if solr_status == "unhealthy" or localstack_status == "unhealthy" or postgres_status == "unhealthy":
         overall_status = "degraded"
 
     return {
         "status": overall_status,
-        "postgres": "healthy",
+        "postgres": postgres_status,
         "localstack": localstack_status,
         "solr": solr_status
     }

@@ -59,3 +59,19 @@ def test_work_orders_flow():
     response = client.patch(f"/work-orders/{wo_id}/status", json={"status": "completed"})
     assert response.status_code == 200
     assert response.json()["new_status"] == "completed"
+
+    # 4. Patch status to invalid value (should return 422 validation error)
+    response = client.patch(f"/work-orders/{wo_id}/status", json={"status": "banana"})
+    assert response.status_code == 422
+
+
+def test_model_monitoring():
+    response = client.get("/analytics/model-monitoring")
+    assert response.status_code == 200
+    metrics = response.json()
+    for key in ["accuracy", "precision", "recall", "f1", "roc_auc"]:
+        assert key in metrics
+        assert isinstance(metrics[key], float)
+        assert 0.0 <= metrics[key] <= 1.0
+
+

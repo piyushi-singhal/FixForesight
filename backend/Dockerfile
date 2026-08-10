@@ -1,6 +1,9 @@
 # FixForesight Backend Dockerfile
 FROM python:3.10-slim
 
+# Force stdin, stdout and stderr to be totally unbuffered
+ENV PYTHONUNBUFFERED=1
+
 # Set work directory
 WORKDIR /app
 
@@ -19,6 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ /app/backend/
 COPY src/ /app/src/
 COPY models/ /app/models/
+COPY data/ /app/data/
+COPY alembic.ini /app/alembic.ini
 COPY config.ini /app/
 
 # Expose port

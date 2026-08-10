@@ -8,7 +8,7 @@ graph TB
             end
 
             subgraph LS_C["localstack container"]
-                LS_IMG["localstack/localstack:latest"]
+                LS_IMG["localstack/localstack:3.8.0"]
                 LS_SVC["Services: s3, sqs, sns"]
                 LS_INIT["infra/localstack/init-resources.sh"]
                 LS_VOL["localstack_data volume"]

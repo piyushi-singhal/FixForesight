@@ -242,7 +242,7 @@ def main():
         conn.close()
 
     # 2. Prediction Generation
-    print_separator("STEP 2: TensorFlow / ML Model Inference & Prediction Storage")
+    print_separator("STEP 2: ML Model Inference & Prediction Storage")
     
     # Run the ML pipeline locally for M101
     print("Executing ML prediction model on machine M101's telemetry metrics...")

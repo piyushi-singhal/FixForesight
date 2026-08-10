@@ -76,7 +76,7 @@ FixForesight uses a layered architecture with clear separation between:
 | Container | Image | Port | Role |
 |---|---|---|---|
 | `postgres` | postgres:15-alpine | 5432 | Primary data store |
-| `localstack` | localstack/localstack:latest | 4566 | S3, SQS, SNS simulation |
+| `localstack` | localstack/localstack:3.8.0 | 4566 | S3, SQS, SNS simulation |
 | `solr` | solr:9-alpine | 8983 | Full-text search index |
 | `backend` | python:3.10-slim (custom) | 8000 | FastAPI application |
 | `frontend` | nginx (built from Dockerfile) | 3000 | Static React app |

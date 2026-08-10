@@ -68,6 +68,13 @@ class DashboardResponse(BaseModel):
     critical_machines: int
     critical_alerts_count: int
 
+from enum import Enum
+
+class WorkOrderStatus(str, Enum):
+    open = "open"
+    in_progress = "in_progress"
+    completed = "completed"
+
 class WorkOrderRequest(BaseModel):
     machine_id: Optional[str] = None
     priority: Optional[str] = None
@@ -75,7 +82,8 @@ class WorkOrderRequest(BaseModel):
     recommendation_id: Optional[int] = None
 
 class WorkOrderStatusUpdate(BaseModel):
-    status: str
+    status: WorkOrderStatus
+
 
 
 class AlertWebhookRequest(BaseModel):

@@ -1061,7 +1061,7 @@
                 <!-- 3. Predictions View -->
                 <div id="page-predictions" class="page-view" style="display: none;">
                     <div style="margin-bottom: 20px;">
-                        <h2 style="font-size: 24px; font-weight:700;">Predictive Maintenance Analysis (TensorFlow)</h2>
+                        <h2 style="font-size: 24px; font-weight:700;">Predictive Maintenance Analysis (ML model)</h2>
                         <p style="color:var(--text-secondary); font-size:13px; margin-top:4px;">Continuous forecast analysis of industrial failure anomalies.</p>
                     </div>
                     <div class="glass-card">
@@ -1706,7 +1706,7 @@
             }
         }
 
-        // Load TensorFlow predictions
+        // Load ML predictions
         async function loadPredictions() {
             const tbody = document.getElementById('predictions-table-body');
             tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 20px;"><div class="spinner" style="margin: 0 auto;"></div></td></tr>';

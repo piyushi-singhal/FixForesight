@@ -24,7 +24,7 @@ Source: `docker-compose.yml` (verified directly).
 #### localstack
 | Property | Value |
 |---|---|
-| Image | `localstack/localstack:latest` |
+| Image | `localstack/localstack:3.8.0` |
 | Container | `localstack` |
 | Port | `4566:4566` |
 | Services | `s3, sqs, sns` |

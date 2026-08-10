@@ -20,7 +20,7 @@ CREATE TABLE machines (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Predictions Table (TensorFlow output target)
+-- 2. Predictions Table (ML model output target)
 CREATE TABLE predictions (
     prediction_id SERIAL PRIMARY KEY,
     machine_id VARCHAR(50) REFERENCES machines(machine_id) ON DELETE CASCADE,
